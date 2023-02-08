@@ -1,25 +1,34 @@
-import { createRouter, createWebHashHistory, RouteRecordRaw } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
+/** router配置
+ * 这个文件设置的是导航跳转的方式
+ * */
+
+import { createRouter, createWebHashHistory, RouteRecordRaw } from 'vue-router';
 
 const routes: Array<RouteRecordRaw> = [
-  {
-    path: '/',
-    name: 'home',
-    component: HomeView
-  },
-  {
-    path: '/about',
-    name: 'about',
-    // route level code-splitting
-    // this generates a separate chunk (about.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
-    component: () => import(/* webpackChunkName: "about" */ '../views/AboutView.vue')
-  }
+    {
+        path: '/',
+        name: 'Upload',
+        component: () => import('../views/UploadPicture.vue')
+    },
+    {
+        path: "/Mapbox",
+        name: "Mapbox",
+        component: () =>
+            import("../views/MapResult.vue")
+    },
+    {
+        path: "/PoiShow",
+        name: "PoiShow",
+        component: () =>
+            import("../views/PoiShow.vue")
+    },
 ]
 
-const router = createRouter({
-  history: createWebHashHistory(),
-  routes
+
+export const router = createRouter({
+    history: createWebHashHistory(),
+    routes
 })
 
-export default router
+// export default router;
+
