@@ -260,8 +260,8 @@
         </div>
         <!-- 中下提交键 -->
         <div class='middle-button'>
-            <el-button type="primary" plain :icon="Search" class="middle-button-el" style="height: 45px;padding-left: 45px;padding-right: 45px;"
-                @click="submitInfoButtonHandler($event)">提交搜索</el-button>
+            <el-button type="primary" plain :icon="Plus" class="middle-button-el" style="height: 45px;padding-left: 45px;padding-right: 45px;"
+                @click="submitInfoButtonHandler($event)">提交信息</el-button>
         </div>
     </div>
     <!-- <el-dialog :visible.sync="dialogVisible" :close-on-click-modal="false" append-to-body>
@@ -278,22 +278,23 @@ import { Ref, ref, computed, watch, getCurrentInstance, ComponentInternalInstanc
 import { VueCropper } from "vue-cropper";
 import axios from 'axios';
 import 'vue-cropper/dist/index.css'
+import { compressAccurately } from 'image-conversion'
 import { removeElButtonFocus } from "@/composables/utilsFunction";
-import { Close, Plus, Minus, Check, RefreshRight, RefreshLeft, Refresh, FullScreen, Search, StarFilled } from '@element-plus/icons-vue'
+import { Close, Plus, Minus, Check, RefreshRight, RefreshLeft, Refresh, FullScreen, StarFilled } from '@element-plus/icons-vue'
 import { openErrorMessage, openSuccessMessage, openWarningMessage } from "@/composables/utilsFunction";
 import type { UploadFile, UploadProps, UploadInstance, UploadRawFile } from 'element-plus'
 import { Info } from "@icon-park/vue-next";
 // import { compressAccurately } from 'image-conversion'
 import { shortcuts, cities } from "@/composables/form-page/initForm";
 import setupForm from "@/composables/form-page/initForm";
-import buildForm from "@/composables/submit/submitForm";
+import postForm from "@/composables/submit/submitForm";
 
 const dialogImageUrl: Ref<string> = ref('')  // 原图片链接
 const dialogVisible: Ref<boolean> = ref(false) // dialog框是否可见
 const showPic: Ref<boolean> = ref(false)  // 预览图片是否可见
 const showPicUrl: Ref<string> = ref('')  // 预览图片链接
 const fileList: Ref<any> = ref([])
-const dialogImgFile: Ref<UploadFile> = ref({ name: "", status: 'fail', uid: -1 } as UploadFile)  // 上传图片的原文件
+const dialogImgFile: Ref<UploadFile> = ref({} as UploadFile); // 上传图片的原文件
 const cropperImg: Ref<string> = ref('')  // 转换为blob图片链接
 const previews = ref({}) // 预览图片
 const showBoxStyle = ref({}) // 预览展示格式
@@ -357,8 +358,6 @@ const handleChange: UploadProps['onChange'] = (uploadFile, uploadFiles) => {
     }
     // 图片文件及属性均存在继续赋值
     if (uploadFile) {
-        console.log(uploadFile)
-        // console.log(fileList.value)
         dialogImgFile.value = uploadFile;
         if (uploadFile.raw)
             cropperChange(uploadFile.raw);
@@ -459,7 +458,6 @@ const handleReset = (event: Event) => {
 
 // 实时预览
 const realTime = (data: any) => {
-    console.log(data);
     previews.value = data;
     showBoxStyle.value = {
         width: data.w + 'px',
@@ -490,76 +488,7 @@ const handleModalSure = (event: Event) => {
         console.log(cropW);
         (proxy.$refs.cropper as any).changeScale(cropW - 3)
         console.log(cropW);
-        // (proxy.$refs.cropper as any).getCropBlob((data: Blob)=>{
-        //     console.log(data)
-        // })
-        // (proxy.$refs.cropper as any).getCropBlob((data: Blob) => { // 获取当前裁剪好的数据
-        //     console.log(data)
-        //     // fileList.value.push({name: "cut_pic.jpg",url: window.URL.createObjectURL(data)});
-        //     // data是一个Blob数据，部分接口接收的是File转化的FormData数据
-        //     let formData = new FormData();
-        //     formData.append('image', data, 'cut_pic.jpg');
-        //     // 调用axios上传
-        //     axios.post("./assets/upload_pic", formData).then((response) => {
-        //         console.log('response', response);
-        //         //   const res = response.data;
-        //         //   if (res.code == 0) {
-        //         // 	  this.$message.success('剪裁上传成功');
-        //         // 	  this.$emit('saveImage', res.result.url);
-        //         //   } else {
-        //         // 	  this.$message.error('剪裁上传失败');
-        //         //   }
-        //     });
-        //     // formData.append(
-        //     //     "file",
-        //     //     new File(
-        //     //         [data], // 将Blob类型转化成File类型
-        //     //         "pic.jpg", // 设置File类型的文件名称
-        //     //         { type: data.type } // 设置File类型的文件类型
-        //     //     )
-        //     // );
-        //     // console.log(formData)
-        //     // // 调用接口上传
-        //     // upLoadFile(formData).then(result => {
-        //     //     console.log(result)
-        //     //     this.dialogVisible = false;
-        //     // })
-
-        //     //第三个参数是规定以什么为后缀，接口是根据后缀来返回地址格式的
-        //     // formData.append("file", data,'chris.jpg');
-        //     //   //上传接口
-        //     // uploadApi(formData).then(res=>{})
-        // })
         (proxy.$refs.cropper as any).getCropBlob((data: Blob) => { // 获取当前裁剪好的数据
-            // console.log(data)
-
-            // // 压缩图片到1m以下
-            // const res = compressAccurately(data, {
-            //     size: 1000, //需要压缩的大小
-            //     accuracy: 0.80, //精度 0.8-0.99之间 默认值0.95
-            //     type: (dialogImgFile.value.raw as any).type
-            // }).then(res => {
-            //     console.log(dialogImgFile.value.raw)
-            //     var compressed_file = new File([res], (dialogImgFile.value.raw as any).name, { type: (dialogImgFile.value.raw as any).type });
-            //     let formData = new FormData();
-            //     formData.append("file", compressed_file);
-            //     console.log(compressed_file)
-            //     console.log(formData)
-            //     // // 调用接口上传
-            //     // setHead(formData).then((value) => {
-            //     //   const { code, message } = value
-            //     //   if (code === 200) {
-            //     //     this.$message({ message: '头像修改成功', type: 'success' })
-            //     //     this.$router.push({ name: 'profile', params: { email: this.info.email } })
-            //     //     setTimeout(() => {
-            //     //       this.loading = false
-            //     //     }, 0.1 * 1000)
-            //     //   } else {
-            //     //     this.$message.error('头像修改失败' + message)
-            //     //   }
-            //     // })
-            // })
-
         })
     }
     removeElButtonFocus(event);
@@ -567,17 +496,31 @@ const handleModalSure = (event: Event) => {
 
 // 提交搜索
 const submitInfoButtonHandler = (event: Event) => {
-    console.log(picForm)
-//     submitQuery(
-//     poiDetailsList,
-//     lineDetailsList,
-//     queryForm,
-//     isSubmittingQueryForm,
-//     sortRadio
-//   );
+    if(dialogImageUrl.value===''){
+        openErrorMessage("请选择一张图片再提交信息");
+        removeElButtonFocus(event);
+        return
+    }
+    
+    if(proxy){
+        (proxy.$refs.cropper as any).getCropBlob((data: Blob) => { // 获取当前裁剪好的数据
+          console.log(data)
+            // 压缩图片到1m以下
+          const res = compressAccurately(data, {
+            size: 1000, //需要压缩的大小
+            accuracy: 0.80, //精度 0.8-0.99之间 默认值0.95
+            scale: 0.5,
+          }).then(res => {
+            var compressed_file = new File([res], dialogImgFile.value.name, { type: dialogImgFile.value.raw!.type });
+            const formData = new FormData();
+            formData.append("picForm", JSON.stringify(picForm));
+            formData.append("file", compressed_file);
+            // 调用接口上传
+            postForm(formData,isSubmittingQueryForm);
+          })
 
-    // Todo: 判断是否已经加入图片
-    buildForm(picForm, isSubmittingQueryForm);
+        })
+    }
 
     // 全屏骨架屏
     var html = document.getElementById("skeleton-height");

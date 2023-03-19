@@ -19,29 +19,31 @@
             <el-button class="changepadding" type="primary" :icon="Message" :plain="!isShowInfo"
               @click="showInfoButtonHandler">展开信息</el-button>
           </el-button-group> -->
-        <!-- 加入判断，消除二次点击卫星图再点击路况bug，以及高亮无法聚焦bug -->
-        <el-button v-if="isSetMapStyleIng" :loading="true" style="width: 266.4px;">加载中</el-button>
-        <el-button-group v-else>
-          <el-button v-if="!isSetDis" class="changepadding" :icon="Ruler" :loading="isSetMapStyleIng" @click="mappingChangeHandle">测距</el-button>
-          <el-button v-else type="primary" class="changepadding" :icon="Ruler" :loading="isSetMapStyleIng"
-            @click="mappingChangeHandle">测距</el-button>
-          <el-button v-if="!isSatellite" class="changepadding" :loading="isSetMapStyleIng" @click="setMapStyleHandler">
-            <Satellite />
-            <div style="margin-left: 6px;">卫星</div>
-          </el-button>
-          <el-button v-else type="primary" class="changepadding" :plain="!isSatellite" :loading="isSetMapStyleIng" @click="setMapStyleHandler">
-            <Satellite />
-            <div style="margin-left: 6px;">卫星</div>
-          </el-button>
-          <el-button v-if="!isAddTraffic" class="changepadding" :icon="Road" :loading="isSetMapStyleIng"
-            @click="changeTrafficMapVisibilityHandler">路况</el-button>
-          <el-button v-else class="changepadding" type="primary" :icon="Road" :loading="isSetMapStyleIng"
-            @click="changeTrafficMapVisibilityHandler">路况</el-button>
-          <el-button v-if="!isShowInfo" class="changepadding" :icon="Message" :loading="isSetMapStyleIng"
-            @click="showInfoButtonHandler">展开信息</el-button>
-          <el-button v-else class="changepadding" type="primary" :icon="Message" :loading="isSetMapStyleIng"
-            @click="showInfoButtonHandler">展开信息</el-button>
-        </el-button-group>
+          <!-- 加入判断，消除二次点击卫星图再点击路况bug，以及高亮无法聚焦bug -->
+          <el-button v-if="isSetMapStyleIng" :loading="true" style="width: 266.4px;">加载中</el-button>
+          <el-button-group v-else>
+            <el-button v-if="!isSetDis" class="changepadding" :icon="Ruler" :loading="isSetMapStyleIng"
+              @click="mappingChangeHandle">测距</el-button>
+            <el-button v-else type="primary" class="changepadding" :icon="Ruler" :loading="isSetMapStyleIng"
+              @click="mappingChangeHandle">测距</el-button>
+            <el-button v-if="!isSatellite" class="changepadding" :loading="isSetMapStyleIng" @click="setMapStyleHandler">
+              <Satellite />
+              <div style="margin-left: 6px;">卫星</div>
+            </el-button>
+            <el-button v-else type="primary" class="changepadding" :plain="!isSatellite" :loading="isSetMapStyleIng"
+              @click="setMapStyleHandler">
+              <Satellite />
+              <div style="margin-left: 6px;">卫星</div>
+            </el-button>
+            <el-button v-if="!isAddTraffic" class="changepadding" :icon="Road" :loading="isSetMapStyleIng"
+              @click="changeTrafficMapVisibilityHandler">路况</el-button>
+            <el-button v-else class="changepadding" type="primary" :icon="Road" :loading="isSetMapStyleIng"
+              @click="changeTrafficMapVisibilityHandler">路况</el-button>
+            <el-button v-if="!isShowInfo" class="changepadding" :icon="Message" :loading="isSetMapStyleIng"
+              @click="showInfoButtonHandler">展开信息</el-button>
+            <el-button v-else class="changepadding" type="primary" :icon="Message" :loading="isSetMapStyleIng"
+              @click="showInfoButtonHandler">展开信息</el-button>
+          </el-button-group>
         </div>
       </div>
     </div>
@@ -60,14 +62,23 @@ import { Road, Ruler, Message } from "@icon-park/vue-next";
 import mapData from "@/composables/result-page/exampleData";
 import { FeatureCollection, Feature, Geometry, GeoJsonProperties } from "geojson";
 
-// 加载读取样例数据
-let all_feature: Ref<Feature[]> = ref([])
-for (let queryResult of mapData.value) {
-  let feature: Ref<Feature> = ref({ type: "Feature", geometry: { "type": "Point", "coordinates": [queryResult.lng, queryResult.lat] }, properties: { "name": queryResult.name, "address": queryResult.address } } as Feature)
-  all_feature.value.push(feature.value)
-}
-let mapObj: Ref<FeatureCollection> = ref({ type: "FeatureCollection", features: all_feature.value } as FeatureCollection<Geometry, GeoJsonProperties>)
+const props = defineProps(["resultData"]);
 
+// TODO:样例数据
+// if (props.resultData !== undefined) { // 假如是从搜索页跳转回来
+//   queryResponse.value = JSON.parse(props.resultData)
+
+//   for (let queryResult of queryResponse.value.geojsonResults) {
+//     mapObj.value.push(JSON.parse(queryResult.geojsonResult))
+//   }
+// } else { // 否则读取样例数据
+  let all_feature: Ref<Feature[]> = ref([])
+  for (let queryResult of mapData.value) {
+    let feature: Ref<Feature> = ref({ type: "Feature", geometry: { "type": "Point", "coordinates": [queryResult.lng, queryResult.lat] }, properties: { "name": queryResult.name, "address": queryResult.address } } as Feature)
+    all_feature.value.push(feature.value)
+  }
+  let mapObj: Ref<FeatureCollection> = ref({ type: "FeatureCollection", features: all_feature.value } as FeatureCollection<Geometry, GeoJsonProperties>)
+// }
 // 设置测距
 const isSetDis = ref(false);
 
@@ -170,12 +181,11 @@ const showInfoButtonHandler = (event: any) => {
   padding-left: 5px;
   padding-right: 5px;
 }
-
 </style>
 <style>
 /* 禁止滚动条 */
 body {
-  overflow-y: hidden;
+  /* overflow-y: hidden; */
   padding-right: 0px;
 }
 
