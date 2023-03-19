@@ -5,8 +5,17 @@
             <img :src="showPicUrl" alt="">
         </div>
     </div>
-
-    <div style="min-width:1500px">
+    <!-- 骨架屏 -->
+    <el-container id="skeleton-screen" v-show="isSubmittingQueryForm">
+      <div style="width: 100%">
+        <el-skeleton animated>
+          <template #template>
+            <el-skeleton-item id="skeleton-height" variant="image" style="width: 100%; height: 100%" />
+          </template>
+        </el-skeleton>
+      </div>
+    </el-container>
+    <div style="min-width:1500px" v-show="!isSubmittingQueryForm">
         <div>
             <!-- 左边信息栏 -->
             <div class="left-box">
@@ -266,7 +275,6 @@
 
 <script lang="ts" setup>
 import { Ref, ref, computed, watch, getCurrentInstance, ComponentInternalInstance, reactive, onMounted } from "vue";
-import { PicForm } from "@/composables/baseTypes";
 import { VueCropper } from "vue-cropper";
 import axios from 'axios';
 import 'vue-cropper/dist/index.css'
@@ -276,7 +284,9 @@ import { openErrorMessage, openSuccessMessage, openWarningMessage } from "@/comp
 import type { UploadFile, UploadProps, UploadInstance, UploadRawFile } from 'element-plus'
 import { Info } from "@icon-park/vue-next";
 // import { compressAccurately } from 'image-conversion'
-import { option, shortcuts, cities } from "@/composables/form-page/initForm";
+import { shortcuts, cities } from "@/composables/form-page/initForm";
+import setupForm from "@/composables/form-page/initForm";
+import buildForm from "@/composables/submit/submitForm";
 
 const dialogImageUrl: Ref<string> = ref('')  // 原图片链接
 const dialogVisible: Ref<boolean> = ref(false) // dialog框是否可见
@@ -290,8 +300,11 @@ const showBoxStyle = ref({}) // 预览展示格式
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;  //  as ComponetInternalInstance表示类型断言,使用getcurrentinstance代替使用this
 // ctx和proxy都可以访问到定义的全局方法，但是ctx只能在本地使用，线上环境使用proxy
 
-// 提交查询表单
-const picForm = reactive(new PicForm(22.535, 113.931, 'WGS84', [new Date(), new Date()], 'other', 'medium', 0, ['广东省', '深圳市', '南山区'], 4, 'north', 0, 23, 40, 1, 0));
+// 初始化查询表单和裁剪框设置
+const {option, picForm} = setupForm();
+
+// 骨架屏
+const isSubmittingQueryForm: Ref<boolean> = ref(false);
 
 // 级联选择器碰到后展开
 const props = {
@@ -344,7 +357,7 @@ const handleChange: UploadProps['onChange'] = (uploadFile, uploadFiles) => {
     }
     // 图片文件及属性均存在继续赋值
     if (uploadFile) {
-        // console.log("file-list")
+        console.log(uploadFile)
         // console.log(fileList.value)
         dialogImgFile.value = uploadFile;
         if (uploadFile.raw)
@@ -446,7 +459,7 @@ const handleReset = (event: Event) => {
 
 // 实时预览
 const realTime = (data: any) => {
-    // console.log(data);
+    console.log(data);
     previews.value = data;
     showBoxStyle.value = {
         width: data.w + 'px',
@@ -555,7 +568,29 @@ const handleModalSure = (event: Event) => {
 // 提交搜索
 const submitInfoButtonHandler = (event: Event) => {
     console.log(picForm)
+//     submitQuery(
+//     poiDetailsList,
+//     lineDetailsList,
+//     queryForm,
+//     isSubmittingQueryForm,
+//     sortRadio
+//   );
+
+    // Todo: 判断是否已经加入图片
+    buildForm(picForm, isSubmittingQueryForm);
+
+    // 全屏骨架屏
+    var html = document.getElementById("skeleton-height");
+    if (html !== null)
+        html.style.height = String(document.documentElement.clientHeight - 75) + "px" // -75 为了减去导航栏显示小字
     removeElButtonFocus(event);
+}
+
+// 骨架屏自适应高度
+window.onresize = function () {
+  var html = document.getElementById("skeleton-height");
+  if (html !== null)
+    html.style.height = String(document.documentElement.clientHeight - 75) + "px" // -75 为了减去导航栏显示小字
 }
 
 </script>
@@ -576,7 +611,7 @@ const submitInfoButtonHandler = (event: Event) => {
 /* 右边剪切框整体 */
 .cut {
     /* margin: 20px; */
-    width: 550px;
+    width: 500px;
     /* height: 500px; */
     text-align: center;
 }
