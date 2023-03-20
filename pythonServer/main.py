@@ -14,7 +14,7 @@ app = Flask(__name__)
 # postgresql://user:pw@host:port/database_name
 # app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:123456@192.168.6.129/exp3'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:123456@localhost:5432/fire-smoke'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False  # 动态追踪修改设置，未设置会提示警告，不建议开启
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True  # 动态追踪修改设置，未设置会提示警告，不建议开启
 app.config['SQLALCHEMY_ECHO'] = True  # 查询会显示原始SQL语句
 # app.config["SECRET_KEY"] = 'TPmi4aLWRbyVq8zu9v82dWYW1'  # 设置密码
 # con = psycopg2.connect(database="exp3", user="postgres", password="123456", host="192.168.6.129", port="5432")
@@ -43,9 +43,9 @@ def increment_path(path, sep='_'):
 # 定义数据模型
 # 创建数据库模型类
 class FireSmoke(db.Model):
-    __tablename__ = 'fire-smoke'
+    __tablename__ = 'fire_smoke'
     # 参数一：表示属性列的类型，参数二：表示约束类型
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, autoincrement=True, primary_key=True, nullable=False)
     lat = db.Column(db.Numeric(precision=10, scale=7), nullable=False)
     lng = db.Column(db.Numeric(precision=10, scale=7), nullable=False)
     coorSysType = db.Column(db.String, nullable=False)
@@ -64,35 +64,42 @@ class FireSmoke(db.Model):
     humidity = db.Column(db.Integer, nullable=False)
     fireBrigade = db.Column(db.Integer, nullable=False)
     money = db.Column(db.Integer, nullable=False)
-    picName = db.Column(db.String, nullable=False)
+    # picName = db.Column(db.String, nullable=False)
+    picOriginalName = db.Column(db.String, nullable=False)
+    picDatasetName = db.Column(db.String, nullable=False)
 
 
 # 定义路由和视图函数
 @app.route('/addDatabase', methods=['POST'])
 def post_image():
+    # 从请求中获取文件和 JSON 数据
+    # post_data = request.get_json()
+    # 从请求中获取Form数据
+    post_data = request.form.get('picForm')  # 获取picForm信息
+    file = request.files.get('file')  # 获取上传的文件
+    if post_data == '' and not file:
+        return jsonify({'message': '数据库成功被后端接受，但是表单或者图片出错，并未加入数据库'})
+    post_data = ast.literal_eval(post_data)
+    # db.drop_all()
+    # db.create_all()
     try:
-        db.drop_all()
-        db.create_all()
-        # 从请求中获取文件和 JSON 数据
-        # post_data = request.get_json()
-        # 从请求中获取Form数据
-        post_data = request.form.get('picForm')  # 获取picForm信息
-        file = request.files.get('file')  # 获取上传的文件
-        if post_data == '' and not file:
-            return jsonify({'message': '数据库成功被后端接受，但是表单或者图片出错，并未加入数据库'})
-        post_data = ast.literal_eval(post_data)
-        print(post_data)
-        print(file)
-
+        # db.drop_all()
+        # db.create_all()
         # 将图片保存在服务器
         keep_path = './save_pic'
         if not os.path.isdir(keep_path):
             os.makedirs(keep_path)
-        path = os.path.join(keep_path, file.filename)
-        if os.path.exists(path):
-            path = increment_path(path, '_')
+        cur.execute('SELECT MAX(id) FROM fire_smoke')
+        con.commit()
+        info = cur.fetchall()
+        if len(info) != 0 and len(info[0]) != 0 and info[0][0] is not None:
+            max_id = info[0][0] + 1
+        else:
+            max_id = 1
+
+        pic_name = str(max_id).rjust(6, '0') + '.jpg'
+        path = os.path.join(keep_path, pic_name)
         file.save(path)
-        filepath, filename = os.path.split(path)
         # 将数据存储到数据库
         fire_smoke = FireSmoke(lat=post_data['lat'], lng=post_data['lng'], coorSysType=post_data['coorSysType'],
                                start_time=post_data['period'][0],
@@ -104,7 +111,7 @@ def post_image():
                                rainfall=post_data['rainfall'],
                                temperature=post_data['temperature'], humidity=post_data['humidity'],
                                fireBrigade=post_data['fireBrigade'],
-                               money=post_data['money'], picName=filename)
+                               money=post_data['money'], picOriginalName=file.filename, picDatasetName=pic_name)
         db.session.add(fire_smoke)
         db.session.commit()
 
@@ -129,4 +136,5 @@ def add_all_data_origin():
 
 # 运行应用程序
 if __name__ == '__main__':
-    app.run(port=5000)
+    # 一定注意端口是否被占用
+    app.run(port=6000)

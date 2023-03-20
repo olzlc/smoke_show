@@ -515,6 +515,8 @@ const submitInfoButtonHandler = (event: Event) => {
             const formData = new FormData();
             formData.append("picForm", JSON.stringify(picForm));
             formData.append("file", compressed_file);
+            console.log(picForm)
+            console.log(compressed_file)
             // 调用接口上传
             postForm(formData,isSubmittingQueryForm);
           })

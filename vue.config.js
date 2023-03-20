@@ -20,11 +20,11 @@ module.exports = {
 
                 //目标地址（指后端服务器地址）
                 // 后端地址接受的API是 http://后端服务器地址:端口号/test
-                // target: "http://172.30.206.128:8081/test",
-                target: 'http://127.0.0.1:5000/addDatabase',
+                // target: "http://172.30.206.128:5000/addDatabase",
+                target: 'http://127.0.0.1:6000/addDatabase',
                 changeOrigin: true, // 是否跨域
                 pathRewrite: { 
-                    // 把实际请求Url中的'/test'用""代替
+                    // 把实际请求Url中的'/addDatabase'用""代替
                     '^/addDatabase': ""
                 }
             },
