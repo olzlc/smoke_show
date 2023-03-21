@@ -34,12 +34,12 @@
                     <el-row class="form-row">
                         <el-col :span="12">
                             <el-form-item label="纬度">
-                                <el-input-number v-model="picForm.lat" :min="0" :max="90" style="width:160px" />
+                                <el-input-number v-model="picForm.lat" :precision="6" :step="0.000001" :min="0" :max="90" style="width:160px" />
                             </el-form-item>
                         </el-col>
                         <el-col :span="12">
                             <el-form-item label="经度">
-                                <el-input-number v-model="picForm.lng" :min="0" :max="180" style="width:160px" />
+                                <el-input-number v-model="picForm.lng" :precision="6" :step="0.000001" :min="0" :max="180" style="width:160px" />
                             </el-form-item>
                         </el-col>
                     </el-row>
@@ -496,6 +496,16 @@ const handleModalSure = (event: Event) => {
 
 // 提交搜索
 const submitInfoButtonHandler = (event: Event) => {
+    if(picForm.victim === null || picForm.victim === undefined || picForm.lat === null
+     || picForm.lat === undefined ||picForm.lng === null || picForm.lng === undefined
+     || picForm.money === null ||picForm.money === undefined || picForm.humidity === null
+     || picForm.humidity === undefined ||picForm.rainfall === null || picForm.rainfall === undefined
+     || picForm.temperature === null || picForm.temperature === undefined || picForm.beaufort === null
+    || picForm.beaufort === undefined || picForm.fireBrigade === null || picForm.fireBrigade === undefined){
+        openErrorMessage("请完善表单信息");
+        removeElButtonFocus(event);
+        return
+    }
     if(dialogImageUrl.value===''){
         openErrorMessage("请选择一张图片再提交信息");
         removeElButtonFocus(event);
@@ -504,7 +514,6 @@ const submitInfoButtonHandler = (event: Event) => {
     
     if(proxy){
         (proxy.$refs.cropper as any).getCropBlob((data: Blob) => { // 获取当前裁剪好的数据
-          console.log(data)
             // 压缩图片到1m以下
           const res = compressAccurately(data, {
             size: 1000, //需要压缩的大小
@@ -515,8 +524,6 @@ const submitInfoButtonHandler = (event: Event) => {
             const formData = new FormData();
             formData.append("picForm", JSON.stringify(picForm));
             formData.append("file", compressed_file);
-            console.log(picForm)
-            console.log(compressed_file)
             // 调用接口上传
             postForm(formData,isSubmittingQueryForm);
           })

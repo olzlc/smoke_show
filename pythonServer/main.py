@@ -135,6 +135,7 @@ def post_image():
         keep_path = ROOT / 'original_pic'
         if not os.path.isdir(keep_path):
             os.makedirs(keep_path)
+        # todo:如果表一开始为空，查询不到id会报错
         cur.execute('SELECT MAX(id) FROM fire_smoke')
         con.commit()
         info = cur.fetchall()
@@ -171,9 +172,11 @@ def post_image():
         # 预测图片转码base64
         with open(ROOT / 'detect_pic' / pic_name, 'rb') as f:
             image_data = base64.b64encode(f.read()).decode()
+        # 图片信息变为json
+        image_info = {'lat': post_data['lat'], 'lng': post_data['lng'], 'address': file.filename}
 
         # 返回 JSON 数据
-        return jsonify({'message': '成功加入数据', 'detect_box': json_str, 'detect_image': image_data})
+        return jsonify({'message': '成功加入数据', 'detect_box': json_str, 'detect_image': image_data, 'image_info': image_info})
         # return jsonify(post_data)
     except Exception as e:
         print(e)

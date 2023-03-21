@@ -20,7 +20,7 @@ export default function postForm(
 
     // 由于RESTful API是一次性发送请求的，因此似乎难以实现定期从服务器回传数据的功能。
     const waitTimeOut = setTimeout(() => {
-        openWarningMessage("算法运算时间比预想中要长，请耐心等候。");
+        openWarningMessage("预测算法运算时间比预想中要长，请耐心等候。");
     }, 12000);
     const stopQueryTimeOut = setTimeout(() => {
         openErrorMessage(
@@ -43,14 +43,16 @@ export default function postForm(
         )
         .then((data) => {
             // 跳转至结果页
-            openSuccessMessage("计算完成，成功返回数据。");
-
+            openSuccessMessage("添加完成，成功返回数据。");
+            console.log(data)
+            const params = { resultdata: data }
             router.push({
                     // 跳转到结果页
                     name: "Mapbox",
-                    params: {
-                        resultData: data,
-                    },
+                    // params: {
+                    //     resultdata: data,
+                    // },
+                    state: {params},
                 }).then(() =>
                 clear(waitTimeOut, stopQueryTimeOut, isSubmittingQueryForm)
             )

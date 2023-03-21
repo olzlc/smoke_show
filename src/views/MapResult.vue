@@ -50,8 +50,9 @@
   </div>
 </template>
 <script lang="ts" setup>
-import { Ref, ref } from "vue";
-import { MapType } from "@/composables/baseTypes";
+import { Ref, ref, watch, toRefs } from "vue";
+import { useRoute } from 'vue-router'
+import { MapType, DetectResponse, DetectBox } from "@/composables/baseTypes";
 import { setMapStyleMapbox } from "@/composables/result-page/changeMapStyle";
 import { initResultPage } from "@/composables/result-page/initMap";
 import { addPointInfo } from "@/composables/result-page/controlInfo";
@@ -62,23 +63,44 @@ import { Road, Ruler, Message } from "@icon-park/vue-next";
 import mapData from "@/composables/result-page/exampleData";
 import { FeatureCollection, Feature, Geometry, GeoJsonProperties } from "geojson";
 
-const props = defineProps(["resultData"]);
+// const props = defineProps(["resultdata"]);
+// const props = toRefs(props);
+// const route = useRoute()
 
+let mapObj: Ref<FeatureCollection> = ref({type: "FeatureCollection", features: []} as FeatureCollection<Geometry, GeoJsonProperties>)
 // TODO:样例数据
-// if (props.resultData !== undefined) { // 假如是从搜索页跳转回来
-//   queryResponse.value = JSON.parse(props.resultData)
+// 动态路由实现：https://blog.csdn.net/hsuehgw/article/details/129250004
+if (history.state.params !== undefined) { // 假如是从搜索页跳转回来
+  const detectResponse: Ref<DetectResponse> = ref({ statusMessage: "", detectBox: [], detectImage: "" })
+  const resultdata = history.state.params.resultdata
+  console.log(resultdata)
 
-//   for (let queryResult of queryResponse.value.geojsonResults) {
-//     mapObj.value.push(JSON.parse(queryResult.geojsonResult))
-//   }
-// } else { // 否则读取样例数据
+  // 预测框
+  let detectBox: Ref<DetectBox[]> = ref([] as DetectBox[])
+  if(resultdata.detect_box !== undefined)
+    detectBox.value = JSON.parse(resultdata.detect_box) as DetectBox[]
+  console.log(detectBox.value)
+
+  // 预测图片
+  let detectPic = ''
+  if(resultdata.detect_image !== undefined)
+    detectPic = resultdata.detect_image
+
+  // 图片以base64传入
+  let info = resultdata.image_info
+  let all_feature: Ref<Feature[]> = ref([])
+  let feature: Ref<Feature> = ref({ type: "Feature", geometry: { "type": "Point", "coordinates": [info.lng, info.lat] }, properties: { "name": detectPic, "address": info.address } } as Feature)
+  all_feature.value.push(feature.value)
+  mapObj = ref({ type: "FeatureCollection", features: all_feature.value } as FeatureCollection<Geometry, GeoJsonProperties>)
+} else { // 否则读取样例数据
+
   let all_feature: Ref<Feature[]> = ref([])
   for (let queryResult of mapData.value) {
     let feature: Ref<Feature> = ref({ type: "Feature", geometry: { "type": "Point", "coordinates": [queryResult.lng, queryResult.lat] }, properties: { "name": queryResult.name, "address": queryResult.address } } as Feature)
     all_feature.value.push(feature.value)
   }
-  let mapObj: Ref<FeatureCollection> = ref({ type: "FeatureCollection", features: all_feature.value } as FeatureCollection<Geometry, GeoJsonProperties>)
-// }
+  mapObj = ref({ type: "FeatureCollection", features: all_feature.value } as FeatureCollection<Geometry, GeoJsonProperties>)
+}
 // 设置测距
 const isSetDis = ref(false);
 
