@@ -9,6 +9,10 @@ from sqlalchemy import Column, Integer, String, Float, Text, ForeignKey
 from sqlalchemy import and_
 import numpy as np
 import os
+import json
+import sys
+import base64
+from utils.general import LOGGER
 
 app = Flask(__name__)
 # postgresql://user:pw@host:port/database_name
@@ -22,6 +26,16 @@ con = psycopg2.connect(database="fire-smoke", user="postgres", password="123456"
 cur = con.cursor()
 db = SQLAlchemy(app)
 from pathlib import Path
+from detect import detect_one_picture
+
+# 获取当前模块的绝对路径，__file__是一个特殊变量，它表示当前模块的文件名
+FILE = Path(__file__).resolve()  # 这个文件绝对路径
+# 获取了当前模块所在的目录的父目录，即YOLOv5的根目录
+ROOT = FILE.parents[0]
+# 判断YOLOv5的根目录是否已经在Python模块搜索路径中
+if str(ROOT) not in sys.path:
+    sys.path.append(str(ROOT))  # 将YOLOv5的根目录添加到Python模块搜索路径中
+ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # 将YOLOv5的根目录转换为相对路径，相对于当前工作目录
 
 
 def increment_path(path, sep='_'):
@@ -69,6 +83,37 @@ class FireSmoke(db.Model):
     picDatasetName = db.Column(db.String, nullable=False)
 
 
+def product_json(json_name):
+    with open(ROOT / 'result_txt' / json_name, 'r') as f:
+        data = f.read()
+
+    # 将数据分割成行
+    lines = data.split('\n')
+
+    # 创建一个空列表来存储JSON对象
+    json_list = []
+
+    # 遍历每一行数据并将其转换为JSON对象
+    for line in lines:
+        if line:
+            # 将行分割成单个值
+            values = line.split(' ')
+            # 创建一个字典来存储值
+            obj = {
+                'type': values[0],
+                'x1': float(values[1]),
+                'y1': float(values[2]),
+                'x2': float(values[3]),
+                'y2': float(values[4]),
+                'confidence': float(values[5])
+            }
+            # 将字典添加到列表中
+            json_list.append(obj)
+
+    # 将列表转换为JSON字符串并打印输出
+    json_str = json.dumps(json_list)
+    return json_str
+
 # 定义路由和视图函数
 @app.route('/addDatabase', methods=['POST'])
 def post_image():
@@ -80,13 +125,14 @@ def post_image():
     if post_data == '' and not file:
         return jsonify({'message': '数据库成功被后端接受，但是表单或者图片出错，并未加入数据库'})
     post_data = ast.literal_eval(post_data)
+    LOGGER.info(f"success load data")
     # db.drop_all()
     # db.create_all()
     try:
         # db.drop_all()
         # db.create_all()
         # 将图片保存在服务器
-        keep_path = './save_pic'
+        keep_path = ROOT / 'original_pic'
         if not os.path.isdir(keep_path):
             os.makedirs(keep_path)
         cur.execute('SELECT MAX(id) FROM fire_smoke')
@@ -100,6 +146,10 @@ def post_image():
         pic_name = str(max_id).rjust(6, '0') + '.jpg'
         path = os.path.join(keep_path, pic_name)
         file.save(path)
+
+        # 预测
+        detect_one_picture(pic_name)
+
         # 将数据存储到数据库
         fire_smoke = FireSmoke(lat=post_data['lat'], lng=post_data['lng'], coorSysType=post_data['coorSysType'],
                                start_time=post_data['period'][0],
@@ -115,8 +165,15 @@ def post_image():
         db.session.add(fire_smoke)
         db.session.commit()
 
+        # txt生成Json
+        json_name = str(max_id).rjust(6, '0') + '.txt'
+        json_str = product_json(json_name)
+        # 预测图片转码base64
+        with open(ROOT / 'detect_pic' / pic_name, 'rb') as f:
+            image_data = base64.b64encode(f.read()).decode()
+
         # 返回 JSON 数据
-        return jsonify({'message': '成功加入数据'})
+        return jsonify({'message': '成功加入数据', 'detect_box': json_str, 'detect_image': image_data})
         # return jsonify(post_data)
     except Exception as e:
         print(e)

@@ -26,7 +26,7 @@ from utils.torch_utils import select_device, smart_inference_mode
 @smart_inference_mode()
 def run(
         weights=ROOT / 'yolov5s.pt',  # 模型路径或Triton URL
-        source=ROOT / 'data/images',  # 输入源，可以是文件/目录/URL/glob/screen/0(webcam)
+        source=ROOT / 'data/images',  # 输入源，可以是文件/目录
         data=ROOT / 'data/coco128.yaml',  # 数据集的yaml文件路径
         imgsz=(640, 640),  # 推断的图像大小（高，宽）
         conf_thres=0.25,  # 置信度阈值
@@ -43,7 +43,8 @@ def run(
         augment=False,  # 是否进行增强推断
         visualize=False,  # 是否可视化特征
         update=False,  # 是否更新所有模型
-        project=ROOT / 'runs/detect',  # 结果保存到的路径
+        keep_pic=ROOT / 'detect_pic',  # 图片保存到的路径
+        keep_txt=ROOT / 'result_txt',  # txt保存到的路径
         name='exp',  # 结果保存到的名称
         exist_ok=False,  # 是否允许存在的project/name，不进行递增
         line_thickness=2,  # 边框厚度（像素）
@@ -58,10 +59,16 @@ def run(
     # 检查输入源是一个txt
     save_img = not nosave and not source.endswith('.txt')
 
-    # Directories
-    save_dir = increment_path(Path(project) / name, exist_ok=exist_ok)  # 新建文件夹，/ 操作符用来拼接路径
-    # 路径是根据 save_txt 变量的值确定的。如果 save_txt 为 True，则创建的目录是 save_dir 的子目录 labels，否则创建的目录就是 save_dir
-    save_dir.mkdir(parents=True, exist_ok=True)
+    # # Directories
+    # save_dir = increment_path(Path(project) / name, exist_ok=exist_ok)  # 新建文件夹，/ 操作符用来拼接路径
+    # # 路径是根据 save_txt 变量的值确定的。如果 save_txt 为 True，则创建的目录是 save_dir 的子目录 labels，否则创建的目录就是 save_dir
+    # save_dir.mkdir(parents=True, exist_ok=True)
+    save_pic_dir = Path(keep_pic)
+    if not os.path.exists(save_pic_dir):  # 如果路径不存在
+        os.makedirs(save_pic_dir)  # 创建路径
+    save_txt_dir = Path(keep_txt)
+    if not os.path.exists(save_txt_dir):  # 如果路径不存在
+        os.makedirs(save_txt_dir)  # 创建路径
 
     # Load model
     device = select_device(device)
@@ -91,7 +98,7 @@ def run(
 
         # Inference
         with dt[1]:
-            visualize = increment_path(save_dir / Path(path).stem,
+            visualize = increment_path(save_pic_dir / Path(path).stem,
                                        mkdir=True) if visualize else False  # 是否输出可视化模型中间特征图（feature map）
             pred = model(im, augment=augment, visualize=visualize)  # augment是否做数据增强
 
@@ -109,8 +116,8 @@ def run(
             p, im0, frame = path, im0s.copy(), getattr(dataset, 'frame', 0)
 
             p = Path(p)  # to Path
-            save_path = str(save_dir / p.name)  # im.jpg
-            txt_path = str(save_dir / p.stem) + ('' if dataset.mode == 'image' else f'_{frame}')  # im.txt
+            save_path = str(save_pic_dir / p.name)  # im.jpg
+            txt_path = str(save_txt_dir / p.stem) + ('' if dataset.mode == 'image' else f'_{frame}')  # im.txt
             s += '%gx%g ' % im.shape[2:]  # print string
             gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # 获取图像的尺寸信息，并将其赋值给gn变量，用于之后的归一化处理
             imc = im0.copy() if save_crop else im0  # 是否将预测框裁剪下来保存
@@ -129,7 +136,7 @@ def run(
                 # 保存结果
                 for *xyxy, conf, cls in reversed(det):
                     if save_txt:  # 将框信息保存到txt
-                        xywh = torch.tensor(xyxy).view(1, 4).view(-1).tolist()  # normalized xywh
+                        xywh = xyxy2xywh(torch.tensor(xyxy).view(1, 4)).view(1, 4).view(-1).tolist()  # normalized xywh
                         line = (names[int(cls)], *xywh, round(conf.item(), 2)) if save_conf else (names[int(cls)], *xywh)  # label format
 
                         with open(f'{txt_path}.txt', 'a') as f:
@@ -142,7 +149,11 @@ def run(
                         annotator.box_label(xyxy, label, color=colors(c, True))
                     # 是否保存截下来的框
                     if save_crop:
-                        save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
+                        save_one_box(xyxy, imc, file=save_pic_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
+            # 不存在预测结果
+            else:
+                with open(f'{txt_path}.txt', 'a') as f:
+                    f.write('')
 
             # Stream results
             im0 = annotator.result()
@@ -183,18 +194,18 @@ def run(
     t = tuple(x.t / seen * 1E3 for x in dt)  # speeds per image
     LOGGER.info(f'Speed: %.1fms pre-process, %.1fms inference, %.1fms NMS per image at shape {(1, 3, *imgsz)}' % t)
     if save_txt or save_img:
-        LOGGER.info(f"Results saved to {colorstr('bold', save_dir)}")
+        LOGGER.info(f"Results saved to {colorstr('bold', save_pic_dir)}")
     if update:
         strip_optimizer(weights[0])  # update model (to fix SourceChangeWarning)
 
 
-def parse_opt():
+def parse_opt(pic_name):
     # 创建了一个 ArgumentParser 类的实例对象，定义 Python 脚本可以接受的命令行参数的方式，这些参数可以包括位置参数和可选参数等
     parser = argparse.ArgumentParser()
     # 接受一个或多个参数值作为模型文件的路径或 Triton 的 URL
     parser.add_argument('--weights', nargs='+', type=str, default=ROOT / 'best.pt', help='model path or triton URL')
     # 接受的类型
-    parser.add_argument('--source', type=str, default=ROOT / 'images', help='file/dir/URL/glob/screen/0(webcam)')
+    parser.add_argument('--source', type=str, default=ROOT / 'original_pic' / pic_name, help='file/dir/URL/glob/screen/0(webcam)')
     # 可选的训练集
     parser.add_argument('--data', type=str, default=ROOT / 'fire-smoke.yaml', help='(optional) dataset.yaml path')
     # 图片大小，可以多个参数，长，宽
@@ -231,8 +242,10 @@ def parse_opt():
     # 表示是否更新所有模型。如果指定了该选项，模型将下载并更新最新的所有模型文件。如果未指定该选项，则模型不会更新模型文件，而是使用已经下载好的模型文件进行推理。
     # 指定这个参数，则对所有模型进行strip_optimizer操作，去除pt文件中的优化器等信息
     parser.add_argument('--update', action='store_true', help='update all models')
-    # 用于指定保存检测结果的项目名称和目录，其默认值为ROOT / 'runs/detect'，其中ROOT表示YOLOv5根目录。
-    parser.add_argument('--project', default=ROOT / 'detect', help='save results to project/name')
+    # 用于指定保存检测结果的项目名称和目录，其中ROOT表示YOLOv5根目录。
+    parser.add_argument('--keep-pic', default=ROOT / 'detect_pic', help='save results to project/name')
+    # 用于指定保存检测结果的项目名称和目录，其中ROOT表示YOLOv5根目录。
+    parser.add_argument('--keep-txt', default=ROOT / 'result_txt', help='save results to txt')
     # 用于指定保存检测结果的名称，默认值为exp。
     parser.add_argument('--name', default='exp', help='save results to project/name')
     # 表示如果已经存在同名的项目和名称，是否覆盖原有的检测结果。如果指定了该选项，则表示不增加计数器，直接保存到原有的项目和名称中；如果未指定该选项，则表示在原有的项目和名称上增加计数器，以避免覆盖原有的检测结果。
@@ -267,6 +280,11 @@ def main(option):
     run(**vars(option))
 
 
+def detect_one_picture(pic_name):
+    option = parse_opt(pic_name)
+    main(option)
+
+
 if __name__ == "__main__":
-    opt = parse_opt()
+    opt = parse_opt('000001.jpg')
     main(opt)
