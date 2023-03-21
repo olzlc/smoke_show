@@ -32,13 +32,13 @@ export type GCJ02 = AMapLng | AMapLat;
  * 定义了一个带有经纬度信息的GPS位置。
  */
 export class LocationPoint {
-  constructor(lat: number, lng: number) {
-    this.lat = lat;
-    this.lng = lng;
+  constructor(latitude: number, longitude: number) {
+    this.latitude = latitude;
+    this.longitude = longitude;
   }
 
-  lat: number; // 纬度
-  lng: number; // 经度
+  latitude: number; // 纬度
+  longitude: number; // 经度
 }
 
 /**
@@ -98,6 +98,7 @@ export class PicForm {
   humidity: number; // 湿度
   fireBrigade: number; // 消防队伍数量
   money: number; // 财产损失
+  address: string // 精确位置
 
   constructor(
     lat: number,
@@ -114,7 +115,8 @@ export class PicForm {
     temperature: number,
     humidity: number,
     fireBrigade: number,
-    money: number
+    money: number,
+    address: string
   ) {
     this.lat = lat;
     this.lng = lng;
@@ -131,6 +133,7 @@ export class PicForm {
     this.humidity = humidity;
     this.fireBrigade = fireBrigade;
     this.money = money;
+    this.address = address;
   }
 }
 

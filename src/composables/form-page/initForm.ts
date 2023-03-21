@@ -27,7 +27,7 @@ export default function setupForm() {
       enlarge: 0.8, //图片根据截图框输出比例倍数,不要太大不然会卡死
       mode: "100%", //图片默认渲染方式,在裁剪时展现的图片,contain为容器内大小,100%为原大小，
     });
-    const picForm = reactive(new PicForm(22.535, 113.931, 'WGS84', [new Date(), new Date()], 'other', 'medium', 0, ['广东省', '深圳市', '南山区'], 4, 'north', 0, 23, 40, 1, 0));
+    const picForm = reactive(new PicForm(22.5366, 113.9343, 'WGS84', [new Date(), new Date()], 'other', 'medium', 0, ['广东省', '深圳市', '南山区'], 4, 'north', 0, 23, 40, 1, 0, '广东省深圳市南山区'));
   
     return {
       option,

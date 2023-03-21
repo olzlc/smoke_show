@@ -25,7 +25,16 @@ module.exports = {
                 changeOrigin: true, // 是否跨域
                 pathRewrite: { 
                     // 把实际请求Url中的'/addDatabase'用""代替
+                    // 前端发请求匹配到的api替换成空，将请求“http://127.0.0.1:8000/addDatabase”,但真实请求是“http://127.0.0.1:6000/addDatabase””
                     '^/addDatabase': ""
+                }
+            },
+            // 访问腾讯网站跨域
+            '/getAddressTencent': { // 代理标识，项目中通过这个url向后端发送数据
+                target: 'https://apis.map.qq.com/',
+                changeOrigin: true, // 是否跨域
+                pathRewrite: { 
+                    '^/getAddressTencent': ""
                 }
             },
         }

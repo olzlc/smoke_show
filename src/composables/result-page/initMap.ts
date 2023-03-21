@@ -8,6 +8,7 @@ import {
   mapboxTerrainMap,
   mapboxMyToken,
   mapboxTrafficMap,
+  streetBaseMapUrl
 } from "@/composables/map-api/tokens";
 import { trafficLayers } from "@/composables/result-page/traffic-layers";
 import { openErrorMessage } from "@/composables/utilsFunction";
@@ -95,7 +96,7 @@ export function mapNew(
   trafficLayersId.value = []; // 清空原有的traffic info layers
 
   // 传递切换样式后的坐标，定位到切换前位置
-  let arr: [number, number] = [113.93118226232906, 22.535668524991067];
+  let arr: [number, number] = [113.9343, 22.5366];
   // 科技园：113.94712703963842, 22.53338124557513
   if (
     nowPlace.value[0] !== -1 &&
@@ -327,4 +328,3 @@ function mapNewLoadMapbox(map: Ref<Map>, isShowInfo: Ref<boolean>, mapObj: Ref<F
     addPointInfo(map, isShowInfo, mapObj);
   });
 }
-

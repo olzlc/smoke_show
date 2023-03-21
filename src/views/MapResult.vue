@@ -63,14 +63,14 @@ import { Road, Ruler, Message } from "@icon-park/vue-next";
 import mapData from "@/composables/result-page/exampleData";
 import { FeatureCollection, Feature, Geometry, GeoJsonProperties } from "geojson";
 
-// const props = defineProps(["resultdata"]);
-// const props = toRefs(props);
-// const route = useRoute()
 
 let mapObj: Ref<FeatureCollection> = ref({type: "FeatureCollection", features: []} as FeatureCollection<Geometry, GeoJsonProperties>)
 // TODO:样例数据
 // 动态路由实现：https://blog.csdn.net/hsuehgw/article/details/129250004
 if (history.state.params !== undefined) { // 假如是从搜索页跳转回来
+// const props = defineProps(["resultdata"]);
+// const props = toRefs(props);
+// const route = useRoute()
   const detectResponse: Ref<DetectResponse> = ref({ statusMessage: "", detectBox: [], detectImage: "" })
   const resultdata = history.state.params.resultdata
   console.log(resultdata)

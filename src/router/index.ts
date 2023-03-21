@@ -17,10 +17,10 @@ const routes: Array<RouteRecordRaw> = [
             import("../views/MapResult.vue")
     },
     {
-        path: "/PoiShow",
-        name: "PoiShow",
+        path: "/MapSelect",
+        name: "MapSelect",
         component: () =>
-            import("../views/PoiShow.vue")
+            import("../components/MapSelect.vue")
     },
 ]
 

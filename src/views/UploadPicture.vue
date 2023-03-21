@@ -7,63 +7,27 @@
     </div>
     <!-- 骨架屏 -->
     <el-container id="skeleton-screen" v-show="isSubmittingQueryForm">
-      <div style="width: 100%">
-        <el-skeleton animated>
-          <template #template>
-            <el-skeleton-item id="skeleton-height" variant="image" style="width: 100%; height: 100%" />
-          </template>
-        </el-skeleton>
-      </div>
+        <div style="width: 100%">
+            <el-skeleton animated>
+                <template #template>
+                    <el-skeleton-item id="skeleton-height" variant="image" style="width: 100%; height: 100%" />
+                </template>
+            </el-skeleton>
+        </div>
     </el-container>
     <div style="min-width:1500px" v-show="!isSubmittingQueryForm">
         <div>
             <!-- 左边信息栏 -->
             <div class="left-box">
-                <el-divider><el-icon><star-filled /></el-icon>基础信息</el-divider>
                 <el-form :model="picForm" label-width="150px" label-position="left">
-                    <el-row class="form-row">
-                        <el-form-item label="坐标系选择">
-                            <el-radio-group v-model="picForm.coorSysType">
-                                <el-radio label="WGS84" border>大地坐标系</el-radio>
-                                <el-radio label="GCJ02" border>高德坐标系</el-radio>
-                                <el-radio label="Baidu" border>百度坐标系</el-radio>
-                            </el-radio-group>
-                        </el-form-item>
-                    </el-row>
-
-                    <el-row class="form-row">
-                        <el-col :span="12">
-                            <el-form-item label="纬度">
-                                <el-input-number v-model="picForm.lat" :precision="6" :step="0.000001" :min="0" :max="90" style="width:160px" />
-                            </el-form-item>
-                        </el-col>
-                        <el-col :span="12">
-                            <el-form-item label="经度">
-                                <el-input-number v-model="picForm.lng" :precision="6" :step="0.000001" :min="0" :max="180" style="width:160px" />
-                            </el-form-item>
-                        </el-col>
-                    </el-row>
-                    <el-row class="form-row">
-                        <el-form-item label="火源地理位置">
-                            <el-cascader v-model="picForm.province" :options="cities" placeholder="请输入省市区县"
-                                style="width: 390px;" separator="-" filterable :props="props" ref="cascader">
-                                <template #default="{ node, data }">
-                                    <span style="float: left">{{ data.value }}</span>
-                                    <span v-if="!node.isLeaf"> ({{ data.children.length }}) </span>
-                                    <span style="float: right; color: #8492a6; font-size: 13px">{{ data.code }}</span>
-                                </template>
-                            </el-cascader>
-                        </el-form-item>
-                    </el-row>
+                    <el-divider><el-icon><star-filled /></el-icon>火灾描述</el-divider>
                     <el-row class="form-row">
                         <el-form-item label="发生时间范围">
-                            <!-- <el-date-picker v-model="picForm.date" type="date" placeholder="Pick a day" /> -->
                             <el-date-picker v-model="picForm.period" range-separator="To" type="daterange"
                                 :clearable="false" start-placeholder="Start Date" end-placeholder="End Date"
                                 :shortcuts="shortcuts" filterable />
                         </el-form-item>
                     </el-row>
-                    <el-divider><el-icon><star-filled /></el-icon>火灾描述</el-divider>
                     <el-row class="form-row">
                         <el-form-item label="火灾类型">
                             <el-radio-group v-model="picForm.fireType">
@@ -166,6 +130,34 @@
                             </el-radio-group>
                         </el-form-item>
                     </el-row>
+                    <el-divider><el-icon><star-filled /></el-icon>基础信息</el-divider>
+
+                    <el-row class="form-row">
+                        <el-col :span="12">
+                            <el-form-item label="纬度"> {{ picForm.lat.toFixed(7) }}
+                                <!-- <el-input-number v-model="picForm.lat" :precision="6" :step="0.000001" :min="0" :max="90"
+                                    style="width:160px" /> -->
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="12">
+                            <el-form-item label="经度"> {{ picForm.lng.toFixed(7) }}
+                                <!-- <el-input-number v-model="picForm.lng" :precision="6" :step="0.000001" :min="0" :max="180"
+                                    style="width:160px" /> -->
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row class="form-row">
+                        <el-form-item label="火源地理位置">
+                            <el-cascader v-model="picForm.province" :options="cities" placeholder="请输入省市区县"
+                                style="width: 390px;" separator="-" filterable :props="props" ref="cascader" @change="handleProvinceChange">
+                                <template #default="{ node, data }">
+                                    <span style="float: left">{{ data.value }}</span>
+                                    <span v-if="!node.isLeaf"> ({{ data.children.length }}) </span>
+                                    <span style="float: right; color: #8492a6; font-size: 13px">{{ data.code }}</span>
+                                </template>
+                            </el-cascader>
+                        </el-form-item>
+                    </el-row>
 
                 </el-form>
 
@@ -224,9 +216,8 @@
                                 <div class="cropper">
                                     <vueCropper ref="cropper" :img="option.img" :outputSize="option.outputSize"
                                         :outputType="option.outputType" :info="option.info" :canScale="option.canScale"
-                                        :autoCrop="option.autoCrop" :fixed="option.fixed"
-                                        :fixedNumber="option.fixedNumber" :full="option.full"
-                                        :fixedBox="option.fixedBox" :canMove="option.canMove"
+                                        :autoCrop="option.autoCrop" :fixed="option.fixed" :fixedNumber="option.fixedNumber"
+                                        :full="option.full" :fixedBox="option.fixedBox" :canMove="option.canMove"
                                         :canMoveBox="option.canMoveBox" :original="option.original"
                                         :autoCropWidth="option.autoCropWidth" :autoCropHeight="option.autoCropHeight"
                                         :centerBox="option.centerBox" :high="option.high" :infoTrue="option.infoTrue"
@@ -258,10 +249,18 @@
                 </el-form>
             </div>
         </div>
-        <!-- 中下提交键 -->
-        <div class='middle-button'>
-            <el-button type="primary" plain :icon="Plus" class="middle-button-el" style="height: 45px;padding-left: 45px;padding-right: 45px;"
-                @click="submitInfoButtonHandler($event)">提交信息</el-button>
+        <!-- todo: 加入拖拽定位 -->
+        <div style="padding-left: 10px;padding-right: 10px;">
+            <el-divider><el-icon><star-filled /></el-icon>详细地址信息</el-divider>
+            <el-input v-model="picForm.address" placeholder="请输入省市区名称" style="padding-left: 20px"></el-input>
+            <div style="padding-left: 20px">
+                <MapSelect :latitude="picForm.lat" :longitude="picForm.lng" :isemitingprovince="isemitingprovince" @changeaddress="getAddressInfoHandler"/>
+            </div>
+            <div class='middle-button'>
+                <el-button type="primary" plain :icon="Plus" class="middle-button-el"
+                    style="height: 45px;padding-left: 45px;padding-right: 45px;"
+                    @click="submitInfoButtonHandler($event)">提交信息</el-button>
+            </div>
         </div>
     </div>
     <!-- <el-dialog :visible.sync="dialogVisible" :close-on-click-modal="false" append-to-body>
@@ -270,7 +269,6 @@
     <!-- <el-dialog title="编辑头像" :visible.sync="dialogFormVisible" :close-on-click-modal="false" append-to-body>
         <label class="btn" for="uploads">选择图片</label>
     </el-dialog> -->
-
 </template>
 
 <script lang="ts" setup>
@@ -284,10 +282,11 @@ import { Close, Plus, Minus, Check, RefreshRight, RefreshLeft, Refresh, FullScre
 import { openErrorMessage, openSuccessMessage, openWarningMessage } from "@/composables/utilsFunction";
 import type { UploadFile, UploadProps, UploadInstance, UploadRawFile } from 'element-plus'
 import { Info } from "@icon-park/vue-next";
-// import { compressAccurately } from 'image-conversion'
 import { shortcuts, cities } from "@/composables/form-page/initForm";
 import setupForm from "@/composables/form-page/initForm";
 import postForm from "@/composables/submit/submitForm";
+import { getLatLngTencent } from "@/composables/map-api/tencentMapApi"
+import { LocationPoint } from "@/composables/baseTypes";
 
 const dialogImageUrl: Ref<string> = ref('')  // 原图片链接
 const dialogVisible: Ref<boolean> = ref(false) // dialog框是否可见
@@ -302,7 +301,7 @@ const { proxy } = getCurrentInstance() as ComponentInternalInstance;  //  as Com
 // ctx和proxy都可以访问到定义的全局方法，但是ctx只能在本地使用，线上环境使用proxy
 
 // 初始化查询表单和裁剪框设置
-const {option, picForm} = setupForm();
+const { option, picForm } = setupForm();
 
 // 骨架屏
 const isSubmittingQueryForm: Ref<boolean> = ref(false);
@@ -496,37 +495,39 @@ const handleModalSure = (event: Event) => {
 
 // 提交搜索
 const submitInfoButtonHandler = (event: Event) => {
-    if(picForm.victim === null || picForm.victim === undefined || picForm.lat === null
-     || picForm.lat === undefined ||picForm.lng === null || picForm.lng === undefined
-     || picForm.money === null ||picForm.money === undefined || picForm.humidity === null
-     || picForm.humidity === undefined ||picForm.rainfall === null || picForm.rainfall === undefined
-     || picForm.temperature === null || picForm.temperature === undefined || picForm.beaufort === null
-    || picForm.beaufort === undefined || picForm.fireBrigade === null || picForm.fireBrigade === undefined){
+    if (picForm.victim === null || picForm.victim === undefined || picForm.lat === null
+        || picForm.lat === undefined || picForm.lng === null || picForm.lng === undefined
+        || picForm.money === null || picForm.money === undefined || picForm.humidity === null
+        || picForm.humidity === undefined || picForm.rainfall === null || picForm.rainfall === undefined
+        || picForm.temperature === null || picForm.temperature === undefined || picForm.beaufort === null
+        || picForm.beaufort === undefined || picForm.fireBrigade === null || picForm.fireBrigade === undefined) {
         openErrorMessage("请完善表单信息");
         removeElButtonFocus(event);
         return
     }
-    if(dialogImageUrl.value===''){
+    if (dialogImageUrl.value === '') {
         openErrorMessage("请选择一张图片再提交信息");
         removeElButtonFocus(event);
         return
     }
-    
-    if(proxy){
+
+    if (proxy) {
         (proxy.$refs.cropper as any).getCropBlob((data: Blob) => { // 获取当前裁剪好的数据
             // 压缩图片到1m以下
-          const res = compressAccurately(data, {
-            size: 1000, //需要压缩的大小
-            accuracy: 0.80, //精度 0.8-0.99之间 默认值0.95
-            scale: 0.5,
-          }).then(res => {
-            var compressed_file = new File([res], dialogImgFile.value.name, { type: dialogImgFile.value.raw!.type });
-            const formData = new FormData();
-            formData.append("picForm", JSON.stringify(picForm));
-            formData.append("file", compressed_file);
-            // 调用接口上传
-            postForm(formData,isSubmittingQueryForm);
-          })
+            const res = compressAccurately(data, {
+                size: 1000, //需要压缩的大小
+                accuracy: 0.80, //精度 0.8-0.99之间 默认值0.95
+                scale: 0.5,
+            }).then(res => {
+                var compressed_file = new File([res], dialogImgFile.value.name, { type: dialogImgFile.value.raw!.type });
+                const formData = new FormData();
+                picForm.lat.toFixed(7);
+                picForm.lng.toFixed(7);
+                formData.append("picForm", JSON.stringify(picForm));
+                formData.append("file", compressed_file);
+                // 调用接口上传
+                postForm(formData, isSubmittingQueryForm);
+            })
 
         })
     }
@@ -540,9 +541,33 @@ const submitInfoButtonHandler = (event: Event) => {
 
 // 骨架屏自适应高度
 window.onresize = function () {
-  var html = document.getElementById("skeleton-height");
-  if (html !== null)
-    html.style.height = String(document.documentElement.clientHeight - 75) + "px" // -75 为了减去导航栏显示小字
+    var html = document.getElementById("skeleton-height");
+    if (html !== null)
+        html.style.height = String(document.documentElement.clientHeight - 75) + "px" // -75 为了减去导航栏显示小字
+}
+
+// 用省市区修改时地址跳转，约束回传值
+const isemitingprovince:Ref<boolean> = ref(false);
+
+// 获得子组件多个参数
+const getAddressInfoHandler = (mapPosition: any) => {
+    picForm.lat = mapPosition.lat;
+    picForm.lng = mapPosition.lng;
+    isemitingprovince.value = false;
+};
+
+const handleProvinceChange = () =>{
+    picForm.address = `${picForm.province[0]}${picForm.province[1]}${picForm.province[2]}`;
+    const lnglat: Ref<LocationPoint> = ref({latitude: 22.533191, longitude: 113.930478});
+    getLatLngTencent(picForm.province[0], picForm.province[1], picForm.province[2]).then(locationRef => {
+      if (locationRef) {
+        const location = locationRef.value; // 提取 LocationPoint 类型的值
+        lnglat.value = location;
+      }
+      picForm.lat = lnglat.value.latitude;
+      picForm.lng = lnglat.value.longitude;
+      isemitingprovince.value = true;
+    });
 }
 
 </script>
@@ -551,7 +576,7 @@ window.onresize = function () {
 /* 裁剪框 */
 .cropper {
     width: 100%;
-    height: 370px;
+    height: 315px;
     /* margin-left: 30px; */
     /* margin-right: 30px; */
     /* text-align: center; */
@@ -578,6 +603,7 @@ window.onresize = function () {
 .el-avatar--default {
     --el-avatar-size: 20px;
 }
+
 /* 提示图标信息 */
 .el-avatar {
     --el-avatar-text-color: #000;
@@ -589,7 +615,7 @@ window.onresize = function () {
     display: inline-block;
     /* 与其他内联元素在同一行显示 */
     width: 1px;
-    height: 615px;
+    height: 550px;
     margin: 5px 2px;
     vertical-align: middle;
     /* 调整元素在其父元素中的垂直对齐方式的属性 */
@@ -599,12 +625,15 @@ window.onresize = function () {
 
 /* 中间居中提交键 */
 .middle-button {
-    align-items: center; /* 设置子元素垂直居中*/
+    align-items: center;
+    /* 设置子元素垂直居中*/
     display: flex;
-    justify-content: center; /* 子元素水平居中 */
+    justify-content: center;
+    padding-top: 30px;
+    /* 子元素水平居中 */
 }
 
-.middle-button-el{
+.middle-button-el {
     /* 不可以直接在按钮设置，因为类样式中设置的宽度将被覆盖 */
     height: 45px;
     width: 200px;

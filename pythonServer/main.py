@@ -188,6 +188,7 @@ def post_image():
 def add_all_data_origin():
     db.drop_all()
     db.create_all()
+
     fire_smoke = FireSmoke()
     db.session.add_all(fire_smoke)
     db.session.commit()
