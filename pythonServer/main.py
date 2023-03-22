@@ -54,6 +54,7 @@ def increment_path(path, sep='_'):
 
     return path
 
+
 # 定义数据模型
 # 创建数据库模型类
 class FireSmoke(db.Model):
@@ -62,12 +63,11 @@ class FireSmoke(db.Model):
     id = db.Column(db.Integer, autoincrement=True, primary_key=True, nullable=False)
     lat = db.Column(db.Numeric(precision=10, scale=7), nullable=False)
     lng = db.Column(db.Numeric(precision=10, scale=7), nullable=False)
-    coorSysType = db.Column(db.String, nullable=False)
     start_time = db.Column(db.Date, nullable=False)
     end_time = db.Column(db.Date, nullable=False)
     fireType = db.Column(db.String, nullable=False)
     fireIntensity = db.Column(db.String, nullable=False)
-    victim = db.Column(db.String, nullable=False)
+    victim = db.Column(db.Integer, nullable=False)
     province = db.Column(db.String, nullable=False)
     city = db.Column(db.String, nullable=False)
     area = db.Column(db.String, nullable=False)
@@ -81,6 +81,7 @@ class FireSmoke(db.Model):
     # picName = db.Column(db.String, nullable=False)
     picOriginalName = db.Column(db.String, nullable=False)
     picDatasetName = db.Column(db.String, nullable=False)
+    address = db.Column(db.String)
 
 
 def product_json(json_name):
@@ -114,6 +115,7 @@ def product_json(json_name):
     json_str = json.dumps(json_list)
     return json_str
 
+
 # 定义路由和视图函数
 @app.route('/addDatabase', methods=['POST'])
 def post_image():
@@ -129,8 +131,8 @@ def post_image():
     # db.drop_all()
     # db.create_all()
     try:
-        # db.drop_all()
-        # db.create_all()
+        db.drop_all()
+        db.create_all()
         # 将图片保存在服务器
         keep_path = ROOT / 'original_pic'
         if not os.path.isdir(keep_path):
@@ -152,7 +154,7 @@ def post_image():
         detect_one_picture(pic_name)
 
         # 将数据存储到数据库
-        fire_smoke = FireSmoke(lat=post_data['lat'], lng=post_data['lng'], coorSysType=post_data['coorSysType'],
+        fire_smoke = FireSmoke(lat=post_data['lat'], lng=post_data['lng'],
                                start_time=post_data['period'][0],
                                end_time=post_data['period'][1], fireType=post_data['fireType'],
                                fireIntensity=post_data['fireIntensity'],
@@ -162,7 +164,8 @@ def post_image():
                                rainfall=post_data['rainfall'],
                                temperature=post_data['temperature'], humidity=post_data['humidity'],
                                fireBrigade=post_data['fireBrigade'],
-                               money=post_data['money'], picOriginalName=file.filename, picDatasetName=pic_name)
+                               money=post_data['money'], picOriginalName=file.filename, picDatasetName=pic_name,
+                               address=post_data['address'])
         db.session.add(fire_smoke)
         db.session.commit()
 
@@ -176,7 +179,8 @@ def post_image():
         image_info = {'lat': post_data['lat'], 'lng': post_data['lng'], 'address': file.filename}
 
         # 返回 JSON 数据
-        return jsonify({'message': '成功加入数据', 'detect_box': json_str, 'detect_image': image_data, 'image_info': image_info})
+        return jsonify(
+            {'message': '成功加入数据', 'detect_box': json_str, 'detect_image': image_data, 'image_info': image_info})
         # return jsonify(post_data)
     except Exception as e:
         print(e)
@@ -184,18 +188,41 @@ def post_image():
         return jsonify({'message': '出现错误'})
 
 
-@app.route("/add_all_data_origin", methods=['GET', 'POST'])
+# @app.route("/add_all_data_origin", methods=['GET', 'POST'])
+# 记得example.txt不要有空行，并且图片记得加入
 def add_all_data_origin():
-    db.drop_all()
-    db.create_all()
+    app.app_context().push()
+    with app.app_context():
+        db.drop_all()
+        db.create_all()
+        with open('./example_data.txt', "r", encoding="utf-8") as r:
+            lines = r.read().split(',\n')
 
-    fire_smoke = FireSmoke()
-    db.session.add_all(fire_smoke)
-    db.session.commit()
-
+        all_data = []
+        for line in lines:
+            # print(line)
+            parsed_obj = json.loads(line)
+            # print(parsed_obj)
+            fire_smoke = FireSmoke(lat=parsed_obj['lat'], lng=parsed_obj['lng'],
+                                   start_time=parsed_obj['start_time'],
+                                   end_time=parsed_obj['end_time'], fireType=parsed_obj['fireType'],
+                                   fireIntensity=parsed_obj['fireIntensity'],
+                                   victim=parsed_obj['victim'], province=parsed_obj['province'],
+                                   city=parsed_obj['city'], area=parsed_obj['area'],
+                                   beaufort=parsed_obj['beaufort'], windDirection=parsed_obj['windDirection'],
+                                   rainfall=parsed_obj['rainfall'],
+                                   temperature=parsed_obj['temperature'], humidity=parsed_obj['humidity'],
+                                   fireBrigade=parsed_obj['fireBrigade'],
+                                   money=parsed_obj['money'], picOriginalName=parsed_obj['picOriginalName'],
+                                   picDatasetName=parsed_obj['picDatasetName'],
+                                   address=parsed_obj['address'])
+            all_data.append(fire_smoke)
+        db.session.add_all(all_data)
+        db.session.commit()
 
 
 # 运行应用程序
 if __name__ == '__main__':
+    # add_all_data_origin()
     # 一定注意端口是否被占用
     app.run(port=6000)

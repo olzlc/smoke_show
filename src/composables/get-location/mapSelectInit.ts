@@ -1,12 +1,15 @@
 import { onMounted, Ref, ref, reactive } from "vue";
-import { LocationPoint, WGS84Lat, WGS84Lng } from "@/composables/baseTypes";
+import {
+  LocationPoint,
+  WGS84Lat,
+  WGS84Lng,
+  SearchInfo,
+} from "@/composables/baseTypes";
 import mapboxgl, { Map, Marker } from "mapbox-gl";
 import MapboxLanguage from "@mapbox/mapbox-gl-language"; // 加中文
 import { skyLoad, mapThreeDim } from "@/composables/result-page/initMap";
 import { getCurrentLocationTencent } from "@/composables/map-api/tencentMapApi";
-import {
-  gcj02_to_wgs84,
-} from "@/composables/map-api/coordinateSystemConversion";
+import { gcj02_to_wgs84 } from "@/composables/map-api/coordinateSystemConversion";
 import { out_of_china } from "@/composables/map-api/coordinateSystemConversion";
 import {
   getAddressSearchTencent,
@@ -26,15 +29,17 @@ export function initDragMap() {
   const map: Ref<Map> = ref({}) as Ref<Map>;
   const marker: Ref<Marker> = ref({}) as Ref<Marker>;
   let arrCenter: Ref<LocationPoint> = ref({
-    longitude: 113.9343,
-    latitude: 22.5366,
+    longitude: 113.930478,
+    latitude: 22.533191,
   });
 
   // 表格变化值
-  const selectAllData = reactive([]) as any[];
+  // const selectAllData = reactive([]) as SearchInfo[];
+  const selectAllData: Ref<SearchInfo[]> = ref([] as SearchInfo[]);
   // 用户选择地址
-  const selectFinalData = ref();
-  const isFinishLoad = ref(false);
+  const selectFinalData: Ref<SearchInfo> = ref({} as SearchInfo);
+
+  const isFinishLoad: Ref<boolean> = ref(false);
 
   onMounted(initMap);
 
@@ -61,6 +66,7 @@ export function initDragMap() {
   function moving() {
     const lngLat = map.value.getCenter();
     marker.value.setLngLat(lngLat);
+    // requestAnimationFrame(moving);
   }
 }
 
@@ -153,12 +159,16 @@ function mapNew(
  */
 export function checkMapMove(
   map: Ref<Map>,
-  selectAllData: any[],
-  selectFinalData: any,
+  selectAllData: Ref<SearchInfo[]>,
+  selectFinalData: Ref<SearchInfo>,
   arrCenter: LocationPoint,
   scollTableTop: any
 ) {
   const isZooming = ref(false);
+  // const startmove = () => {
+  //   isZooming.value = true;
+  //   requestAnimationFrame(startmove);
+  // }
   map.value.on("zoomstart", () => {
     isZooming.value = true;
   });
@@ -177,46 +187,7 @@ export function checkMapMove(
 
     getAddressExploreTencent(lnglat.lng, lnglat.lat, radius.value).then(
       (addressList: any) => {
-        if (
-          addressList.data !== null &&
-          addressList.data !== undefined &&
-          addressList.data !== ""
-        ) {
-          selectAllData.splice(0, selectAllData.length);
-          if (
-            selectFinalData.value !== null &&
-            selectFinalData.value !== undefined &&
-            selectFinalData.value !== ""
-          ) {
-            selectAllData.push(selectFinalData.value);
-          }
-          for (let i = 0; i < addressList.data.length; i++) {
-            if (
-              selectFinalData.value !== null &&
-              selectFinalData.value !== undefined &&
-              selectFinalData.value !== ""
-            ) {
-              if (
-                selectAllData[0] !== null &&
-                selectAllData[0] !== undefined &&
-                selectAllData[0] !== ""
-              )
-                if (addressList.data[i].title !== selectAllData[0].title) {
-                  selectAllData.push({
-                    title: addressList.data[i].title,
-                    address: addressList.data[i].address,
-                    info: addressList.data[i],
-                  });
-                }
-            } else {
-              selectAllData.push({
-                title: addressList.data[i].title,
-                address: addressList.data[i].address,
-                info: addressList.data[i],
-              });
-            }
-          }
-        }
+        addInfoToList(addressList, selectAllData, selectFinalData);
       }
     );
     // 滚动到顶
@@ -226,18 +197,20 @@ export function checkMapMove(
   });
 }
 
-export function searchAddress(selectAllData: any, inputAddress: Ref<string>) {
+export function searchAddress(
+  selectAllData: Ref<SearchInfo[]>,
+  inputAddress: Ref<string>,
+  selectFinalData: Ref<SearchInfo>,
+  scollTableTop: any
+) {
   if (inputAddress.value !== "") {
-    selectAllData.splice(0, selectAllData.length);
     getAddressSearchTencent(inputAddress.value).then((addressList: any) => {
-      for (let i = 0; i < addressList.data.length; i++) {
-        selectAllData.push({
-          title: addressList.data[i].title,
-          address: addressList.data[i].address,
-          info: addressList.data[i],
-        });
-      }
+      addInfoToList(addressList, selectAllData, selectFinalData);
     });
+    // 滚动到顶
+    if (scollTableTop.value !== null) {
+      scollTableTop.value.setScrollTop(0);
+    }
   }
 }
 
@@ -250,7 +223,7 @@ export function searchAddress(selectAllData: any, inputAddress: Ref<string>) {
 export function selectionChange(
   map: Ref<Map>,
   selectData: any,
-  selectFinalData: any
+  selectFinalData: Ref<SearchInfo>
 ) {
   if (selectData !== null && selectData !== undefined && selectData !== "") {
     selectFinalData.value = selectData;
@@ -271,7 +244,14 @@ export function selectionChange(
     // }
     flyTo(map, [lnglat[0], lnglat[1]]);
   } else {
-    selectFinalData.value = null;
+    selectFinalData.value = {
+      title: "",
+      address: "",
+      province: "",
+      city: "",
+      area: "",
+      info: {},
+    };
   }
 }
 
@@ -288,7 +268,10 @@ export function flyTo(map: Ref<Map>, arr: [WGS84Lng, WGS84Lat]) {
  * @param map
  * @param selectAllData
  */
-export function getAddressFirstTime(map: Ref<Map>, selectAllData: any[]) {
+export function getAddressFirstTime(
+  map: Ref<Map>,
+  selectAllData: Ref<SearchInfo[]>
+) {
   let lnglat = map.value.getCenter();
   getAddressExploreTencent(lnglat.lng, lnglat.lat, 1000).then(
     (addressList: any) => {
@@ -297,15 +280,166 @@ export function getAddressFirstTime(map: Ref<Map>, selectAllData: any[]) {
         addressList.data !== undefined &&
         addressList.data !== ""
       ) {
-        selectAllData.splice(0, selectAllData.length);
+        selectAllData.value.splice(0, selectAllData.value.length);
         for (let i = 0; i < addressList.data.length; i++) {
-          selectAllData.push({
+          const address_str:Ref<string> = ref("")
+          if(addressList.data[i].ad_info.district === addressList.data[i].ad_info.city){
+            if(addressList.data[i].ad_info.province === addressList.data[i].ad_info.city){
+              address_str.value = addressList.data[i].ad_info.province + addressList.data[i].address
+            }else{
+              address_str.value = addressList.data[i].ad_info.province + addressList.data[i].ad_info.city + addressList.data[i].address
+            }
+          }
+          else{
+            address_str.value = addressList.data[i].ad_info.province + addressList.data[i].ad_info.city + addressList.data[i].ad_info.district + addressList.data[i].address
+          }
+          selectAllData.value.push({
             title: addressList.data[i].title,
-            address: addressList.data[i].address,
+            address: address_str.value,
+            province: addressList.data[i].ad_info.province,
+            city: addressList.data[i].ad_info.city,
+            area: addressList.data[i].ad_info.district,
             info: addressList.data[i],
           });
         }
       }
     }
   );
+}
+
+// export function addInfoToList(
+//   addressList: any,
+//   selectAllData: Ref<SearchInfo[]>,
+//   selectFinalData: Ref<SearchInfo>,
+// ) {
+//   if (
+//     addressList.data !== null &&
+//     addressList.data !== undefined &&
+//     addressList.data !== ""
+//   ) {
+//     selectAllData.value.splice(0, selectAllData.value.length);
+//     if (
+//       selectFinalData.value !== null &&
+//       selectFinalData.value !== undefined
+//     ) {
+//       selectAllData.value.push(selectFinalData.value);
+//     }
+//     // for (let i = 0; i < addressList.data.length; i++) {
+//     //   if (
+//     //     selectFinalData.value !== null &&
+//     //     selectFinalData.value !== undefined
+//     //   ) {
+//     //     if (
+//     //       selectAllData.value[0] !== null &&
+//     //       selectAllData.value[0] !== undefined
+//     //     )
+//     //       if (addressList.data[i].title !== selectAllData.value[0].title) {
+//     //         if(addressList.data[i].ad_info === null || addressList.data[i].ad_info === undefined){
+//     //           selectAllData.value.push({
+//     //             title: addressList.data[i].title,
+//     //             address: addressList.data[i].province + addressList.data[i].city + addressList.data[i].district + addressList.data[i].address,
+//     //             info: addressList.data[i],
+//     //           });
+//     //         }else{
+//     //           selectAllData.value.push({
+//     //             title: addressList.data[i].title,
+//     //             address: addressList.data[i].ad_info.province + addressList.data[i].ad_info.city + addressList.data[i].ad_info.district + addressList.data[i].address,
+//     //             info: addressList.data[i],
+//     //           });
+//     //         }
+//     //       }
+//     //   } else {
+//     //     if(addressList.data[i].ad_info === null || addressList.data[i].ad_info === undefined){
+//     //       selectAllData.value.push({
+//     //         title: addressList.data[i].title,
+//     //         address: addressList.data[i].province + addressList.data[i].city + addressList.data[i].district + addressList.data[i].address,
+//     //         info: addressList.data[i],
+//     //       });
+//     //     }else{
+//     //       selectAllData.value.push({
+//     //         title: addressList.data[i].title,
+//     //         address: addressList.data[i].ad_info.province + addressList.data[i].ad_info.city + addressList.data[i].ad_info.district + addressList.data[i].address,
+//     //         info: addressList.data[i],
+//     //       });
+//     //     }
+//     //   }
+//     // }
+//     for (let i = 0; i < addressList.data.length; i++) {
+//       if (selectFinalData.value != null && selectFinalData.value !== undefined &&
+//           selectAllData.value[0] != null && selectAllData.value[0] !== undefined &&
+//           addressList.data[i].title !== selectAllData.value[0].title) {
+//         const adInfo = addressList.data[i].ad_info;
+//         const address = adInfo == null || adInfo === undefined ?
+//             addressList.data[i].province + addressList.data[i].city + addressList.data[i].district + addressList.data[i].address :
+//             adInfo.province + adInfo.city + adInfo.district + addressList.data[i].address;
+//         selectAllData.value.push({
+//           title: addressList.data[i].title,
+//           address,
+//           info: addressList.data[i],
+//         });
+//       } else if (selectFinalData.value == null || selectFinalData.value === undefined) {
+//         const adInfo = addressList.data[i].ad_info;
+//         const address = adInfo == null || adInfo === undefined ?
+//             addressList.data[i].province + addressList.data[i].city + addressList.data[i].district + addressList.data[i].address :
+//             adInfo.province + adInfo.city + adInfo.district + addressList.data[i].address;
+//         selectAllData.value.push({
+//           title: addressList.data[i].title,
+//           address,
+//           info: addressList.data[i],
+//         });
+//       }
+//     }
+
+//   }
+// }
+
+function addInfoToList(
+  addressList: any,
+  selectAllData: Ref<SearchInfo[]>,
+  selectFinalData: Ref<SearchInfo>
+) {
+  if (addressList.data === null && addressList.data === undefined) return;
+  selectAllData.value.splice(0, selectAllData.value.length);
+
+  const final: Ref<boolean> = ref(false);
+  if (selectFinalData.value != null && selectFinalData.value !== undefined) {
+    selectAllData.value.push(selectFinalData.value);
+    final.value = true;
+  }
+  for (let i = 0; i < addressList.data.length; i++) {
+    if (final.value === true && addressList.data[i].title === selectAllData.value[0].title) continue;
+    if (
+      addressList.data[i].ad_info === null ||
+      addressList.data[i].ad_info === undefined
+    ) {
+      selectAllData.value.push({
+        title: addressList.data[i].title,
+        address: judgedouble(addressList.data[i], addressList.data[i].address),
+        province: addressList.data[i].province,
+        city: addressList.data[i].city,
+        area: addressList.data[i].district,
+        info: addressList.data[i],
+      });
+    } else {
+      selectAllData.value.push({
+        title: addressList.data[i].title,
+        address: judgedouble(addressList.data[i].ad_info, addressList.data[i].address),
+        province: addressList.data[i].ad_info.province,
+        city: addressList.data[i].ad_info.city,
+        area: addressList.data[i].ad_info.district,
+        info: addressList.data[i],
+      });
+    }
+  }
+}
+
+function judgedouble(
+  data: any,
+  address: string
+){
+  if(data.province === data.city && data.city === data.district)
+    return data.province + address
+  if(data.province === data.city || data.city === data.district)
+    return data.province + data.district + address
+  return data.province + data.city + data.district + address
 }

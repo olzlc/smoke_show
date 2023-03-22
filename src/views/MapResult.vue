@@ -73,13 +73,13 @@ if (history.state.params !== undefined) { // 假如是从搜索页跳转回来
 // const route = useRoute()
   const detectResponse: Ref<DetectResponse> = ref({ statusMessage: "", detectBox: [], detectImage: "" })
   const resultdata = history.state.params.resultdata
-  console.log(resultdata)
+  // console.log(resultdata)
 
   // 预测框
   let detectBox: Ref<DetectBox[]> = ref([] as DetectBox[])
   if(resultdata.detect_box !== undefined)
     detectBox.value = JSON.parse(resultdata.detect_box) as DetectBox[]
-  console.log(detectBox.value)
+  // console.log(detectBox.value)
 
   // 预测图片
   let detectPic = ''

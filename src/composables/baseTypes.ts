@@ -85,7 +85,6 @@ export class selectInfo {
 export class PicForm {
   lat: number; // 纬度
   lng: number; // 经度
-  coorSysType: "WGS84" | "GCJ02" | "Baidu"; // 坐标系类型
   period: [Date, Date]; // 发生时期
   fireType: "forest" | "building" | "indoor" | "other"; // 火灾类型
   fireIntensity: "small" | "medium" | "large"; // 火势强度
@@ -103,7 +102,6 @@ export class PicForm {
   constructor(
     lat: number,
     lng: number,
-    coorSysType: "WGS84" | "GCJ02" | "Baidu",
     period: [Date, Date],
     fireType: "forest" | "building" | "indoor" | "other",
     fireIntensity: "small" | "medium" | "large",
@@ -120,7 +118,6 @@ export class PicForm {
   ) {
     this.lat = lat;
     this.lng = lng;
-    this.coorSysType = coorSysType;
     this.period = period;
     this.fireType = fireType;
     this.fireIntensity = fireIntensity;
@@ -238,5 +235,23 @@ export class DetectResponse{
       this.statusMessage = statusMessage;
       this.detectBox = detectBox;
       this.detectImage = detectImage;
+  }
+}
+
+export class SearchInfo {
+  title: string;
+  address: string;
+  province: string;
+  city:string;
+  area:string;
+  info: object;
+
+  constructor(title: string, address: string, province: string, city:string, area:string, info: object) {
+      this.title = title;
+      this.address = address;
+      this.province = province;
+      this.city= city;
+      this.area = area;
+      this.info = info;
   }
 }

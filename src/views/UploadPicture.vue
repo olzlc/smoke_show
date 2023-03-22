@@ -15,7 +15,7 @@
             </el-skeleton>
         </div>
     </el-container>
-    <div style="min-width:1500px" v-show="!isSubmittingQueryForm">
+    <div style="min-width:1500px;min-height:650px" v-show="!isSubmittingQueryForm">
         <div>
             <!-- 左边信息栏 -->
             <div class="left-box">
@@ -149,7 +149,8 @@
                     <el-row class="form-row">
                         <el-form-item label="火源地理位置">
                             <el-cascader v-model="picForm.province" :options="cities" placeholder="请输入省市区县"
-                                style="width: 390px;" separator="-" filterable :props="props" ref="cascader" @change="handleProvinceChange">
+                                style="width: 390px;" separator="-" filterable :props="props" ref="cascader"
+                                @change="handleProvinceChange">
                                 <template #default="{ node, data }">
                                     <span style="float: left">{{ data.value }}</span>
                                     <span v-if="!node.isLeaf"> ({{ data.children.length }}) </span>
@@ -252,9 +253,14 @@
         <!-- todo: 加入拖拽定位 -->
         <div style="padding-left: 10px;padding-right: 10px;">
             <el-divider><el-icon><star-filled /></el-icon>详细地址信息</el-divider>
-            <el-input v-model="picForm.address" placeholder="请输入省市区名称" style="padding-left: 20px"></el-input>
+            <div style="padding-left: 20px; padding-right: 50px;padding-bottom: 30px;">
+                <el-input v-model="picForm.address" placeholder="请输入详细地址">
+                    <template #prepend>{{ autofix }}</template>
+                </el-input>
+            </div>
             <div style="padding-left: 20px">
-                <MapSelect :latitude="picForm.lat" :longitude="picForm.lng" :isemitingprovince="isemitingprovince" @changeaddress="getAddressInfoHandler"/>
+                <MapSelect :latitude="picForm.lat" :longitude="picForm.lng" :isemitingprovince="isemitingprovince"
+                    @changeaddress="getAddressInfoHandler" />
             </div>
             <div class='middle-button'>
                 <el-button type="primary" plain :icon="Plus" class="middle-button-el"
@@ -495,8 +501,8 @@ const handleModalSure = (event: Event) => {
 
 // 提交搜索
 const submitInfoButtonHandler = (event: Event) => {
-    if (picForm.victim === null || picForm.victim === undefined || picForm.lat === null
-        || picForm.lat === undefined || picForm.lng === null || picForm.lng === undefined
+    console.log(picForm)
+    if (picForm.victim === null || picForm.victim === undefined
         || picForm.money === null || picForm.money === undefined || picForm.humidity === null
         || picForm.humidity === undefined || picForm.rainfall === null || picForm.rainfall === undefined
         || picForm.temperature === null || picForm.temperature === undefined || picForm.beaufort === null
@@ -505,6 +511,13 @@ const submitInfoButtonHandler = (event: Event) => {
         removeElButtonFocus(event);
         return
     }
+    if(picForm.province[0] === null || picForm.province[0] === undefined || picForm.province[0] === ''
+    || picForm.province[1] === null || picForm.province[1] === undefined || picForm.province[1] === ''){
+        openErrorMessage("请完善表单信息");
+        removeElButtonFocus(event);
+        return
+    }
+    
     if (dialogImageUrl.value === '') {
         openErrorMessage("请选择一张图片再提交信息");
         removeElButtonFocus(event);
@@ -520,9 +533,12 @@ const submitInfoButtonHandler = (event: Event) => {
                 scale: 0.5,
             }).then(res => {
                 var compressed_file = new File([res], dialogImgFile.value.name, { type: dialogImgFile.value.raw!.type });
-                const formData = new FormData();
+                // 处理经纬度为7位小数
                 picForm.lat.toFixed(7);
                 picForm.lng.toFixed(7);
+                // 地址自动加上省市区
+                picForm.address = `${picForm.province[0]}${picForm.province[1]}${picForm.province[2]}` + picForm.address
+                const formData = new FormData();
                 formData.append("picForm", JSON.stringify(picForm));
                 formData.append("file", compressed_file);
                 // 调用接口上传
@@ -547,26 +563,61 @@ window.onresize = function () {
 }
 
 // 用省市区修改时地址跳转，约束回传值
-const isemitingprovince:Ref<boolean> = ref(false);
+const isemitingprovince: Ref<boolean> = ref(false);
+
+// 详细地址前固定值
+const autofix: Ref<string> = ref(`${picForm.province[0]}${picForm.province[1]}${picForm.province[2]}`);
+
+// 判断是否有重复值
+function judgedouble(
+  province: string,
+  city: string,
+  district: string
+){
+  if((city === undefined || city === null)&&(district === undefined || district === null))
+    return province
+  if(city === undefined || city === null)
+    return province + district
+  if(district === undefined || district === null)
+    return province + city
+  if(province === city && city === district)
+    return province
+  if(province === city || city === district)
+    return province + district
+  return province + city + district
+}
 
 // 获得子组件多个参数
-const getAddressInfoHandler = (mapPosition: any) => {
-    picForm.lat = mapPosition.lat;
-    picForm.lng = mapPosition.lng;
-    isemitingprovince.value = false;
+const getAddressInfoHandler = (mapPosition: any, changelatlng: string) => {
+    if (changelatlng) {
+        picForm.lat = mapPosition.lat;
+        picForm.lng = mapPosition.lng;
+        isemitingprovince.value = false;
+    }
+    else {
+        picForm.address = mapPosition.address;
+        if (picForm.province[0] !== mapPosition.location.province)
+            picForm.province[0] = mapPosition.location.province
+        if (picForm.province[1] !== mapPosition.location.city)
+            picForm.province[1] = mapPosition.location.city
+        if (picForm.province[2] !== mapPosition.location.area)
+            picForm.province[2] = mapPosition.location.area
+        autofix.value = judgedouble(picForm.province[0], picForm.province[1], picForm.province[2]);
+    }
+
 };
 
-const handleProvinceChange = () =>{
-    picForm.address = `${picForm.province[0]}${picForm.province[1]}${picForm.province[2]}`;
-    const lnglat: Ref<LocationPoint> = ref({latitude: 22.533191, longitude: 113.930478});
+const handleProvinceChange = () => {
+    autofix.value = judgedouble(picForm.province[0], picForm.province[1], picForm.province[2])
+    const lnglat: Ref<LocationPoint> = ref({ latitude: 22.533191, longitude: 113.930478 });
     getLatLngTencent(picForm.province[0], picForm.province[1], picForm.province[2]).then(locationRef => {
-      if (locationRef) {
-        const location = locationRef.value; // 提取 LocationPoint 类型的值
-        lnglat.value = location;
-      }
-      picForm.lat = lnglat.value.latitude;
-      picForm.lng = lnglat.value.longitude;
-      isemitingprovince.value = true;
+        if (locationRef) {
+            const location = locationRef.value; // 提取 LocationPoint 类型的值
+            lnglat.value = location;
+        }
+        picForm.lat = lnglat.value.latitude;
+        picForm.lng = lnglat.value.longitude;
+        isemitingprovince.value = true;
     });
 }
 
@@ -630,6 +681,7 @@ const handleProvinceChange = () =>{
     display: flex;
     justify-content: center;
     padding-top: 30px;
+    padding-bottom: 30px;
     /* 子元素水平居中 */
 }
 

@@ -31,8 +31,6 @@ const picData = defineProps<{
   picName: string;
 }>();
 
-console.log(picData.picName)
-
 function isBase64(str: string) {
   if (str === '' || str.trim() === '') {
     return false;

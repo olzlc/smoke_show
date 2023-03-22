@@ -34,7 +34,7 @@ export async function getCurrentLocationTencent() {
  */
 export async function getAddressSearchTencent(queryString: any) {
   const base_url =
-    "getAddressTencent/ws/place/v1/suggestion/?region=&keyword=";
+    "getAddressTencent/ws/place/v1/suggestion/?address_format=short&keyword=";
   const url = base_url + queryString + "&key=" + key;
   try {
     let resultlist = await axios.get(url)
@@ -58,18 +58,17 @@ export async function getAddressExploreTencent(
   radius: number
 ) {
   try {
-    let base_url =
-      "getAddressTencent/ws/place/v1/explore?boundary=nearby";
+    let base_url = "getAddressTencent/ws/place/v1/explore?boundary=nearby";
     // 1 [默认] 自动扩大范围（依次按照按1公里、2公里、5公里，最大到全城市范围搜索）
     let boundary =
       "(" + String(lat) + "," + String(lng) + "," + String(radius) + ")";
-    let url = base_url + boundary + "&page_size=20&page_index=1&key=" + key;
+    let url = base_url + boundary + "&page_size=20&page_index=1&address_format=short&key=" + key;
     let addresslist = await axios.get(url);
 
     // 搜索失败，使用另一个尝试获取
     if ((addresslist as any).status !== 200) {
-      base_url = "getAddressTencent/ws/place/v1/here?boundary=nearby";
-      url = base_url + boundary + "&page_size=20&page_index=1&key=" + key;
+      base_url = "getAddressTencent/ws/place/v1/search?boundary=nearby";
+      url = base_url + boundary + "&page_size=20&page_index=1&address_format=short&key=" + key;
       addresslist = await axios.get(url);
     }
     return addresslist.data;

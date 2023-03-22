@@ -7,31 +7,17 @@
     </el-aside>
     <el-main width="40%" style="padding-right: 50px;">
       <div style="height: 60px">
-        <el-input
-          :prefix-icon="Search"
-          v-model="inputAddress"
-          placeholder="搜索地址"
-          clearable
-          @input="searchAddressHandle"
-          @clear="clearSelectHandle"
-        />
+        <el-input :prefix-icon="Search" v-model="inputAddress" placeholder="搜索地址" clearable @input="searchAddressHandle"
+          @clear="clearSelectHandle" />
         <el-divider></el-divider>
       </div>
-      <el-table
-        ref="scollTableTop"
-        :data="selectAllData"
-        max-height="340px"
-        highlight-current-row
-        :show-header="false"
-        @current-change="selectionChangeHandle"
-      >
+      <el-table ref="scollTableTop" :data="selectAllData" max-height="340px" highlight-current-row :show-header="false"
+        @current-change="selectionChangeHandle">
         <el-table-column width="500">
           <template #default="scope">
             <div>
               <strong style="font-size: large">{{ scope.row.title }}</strong>
-              <div
-                style="font-size: small; line-height: normal; color: #909399"
-              >{{ scope.row.address }}</div>
+              <div style="font-size: small; line-height: normal; color: #909399">{{ scope.row.address }}</div>
             </div>
           </template>
         </el-table-column>
@@ -52,10 +38,10 @@ import {
 } from "@/composables/get-location/mapSelectInit";
 import { Repositioning } from "@icon-park/vue-next";
 import { Search } from "@element-plus/icons-vue";
-import { ref, watch } from "vue";
+import { ref, watch, Ref, nextTick } from "vue";
 import { getCurrentLocationAMap } from "@/composables/map-api/AMapApi";
 import { openErrorMessage, openWarningMessage, removeElButtonFocus } from "@/composables/utilsFunction";
-import { LocationInfo } from "@/composables/baseTypes";
+import { LocationInfo, SearchInfo } from "@/composables/baseTypes";
 
 const {
   map,
@@ -70,9 +56,12 @@ const {
 // 用户输入的地址
 const inputAddress = ref("");
 
+// 控制选中或者搜索到表单首部
+const scollTableTop = ref();
+
 // 搜索框发生变化
 const searchAddressHandle = () => {
-  searchAddress(selectAllData, inputAddress);
+  searchAddress(selectAllData, inputAddress, selectFinalData, scollTableTop);
 };
 
 // 清空选择
@@ -80,16 +69,33 @@ const clearSelectHandle = () => {
   // selectAllData.splice(0, selectAllData.length);
 };
 
+const ischangeaddress: Ref<{location:{province:string, city:string, area:string}, address:string}> = ref({location:{province:'', city:'', area:''}, address:''})
+
 // 从表格中选择
 const selectionChangeHandle = (selectData: any) => {
   selectionChange(map, selectData, selectFinalData);
+  nextTick(() => {
+    if (selectData.info !== undefined && selectData.info !== null)
+      ischangeaddress.value.address = selectData.info.address + '(' + selectData.info.title + ')';
+      // console.log(selectData)
+      ischangeaddress.value.location.province = selectData.province;
+      ischangeaddress.value.location.city = selectData.city;
+      ischangeaddress.value.location.area = selectData.area;
+  });
 };
 
 // 获得用户当前定位
 const getCurrentAddressButtonHandler = (event: Event) => {
   removeElButtonFocus(event);
   try {
-    selectFinalData.value = null;
+    selectFinalData.value = {
+      title: "",
+      address: "",
+      province: "",
+      city: "",
+      area: "",
+      info: {},
+    };
     getCurrentLocationAMap((data: LocationInfo) => {
       // 在深圳外
       if (data !== null && data !== undefined) {
@@ -99,10 +105,10 @@ const getCurrentAddressButtonHandler = (event: Event) => {
         //   data.latitude < 22.3 ||
         //   data.latitude > 22.9
         // ) {
-          [data.longitude, data.latitude] = [
-            113.9343, 22.5366
-          ];
-          openWarningMessage("范围超出深圳", 900);
+        [data.longitude, data.latitude] = [
+          113.9343, 22.5366
+        ];
+        openWarningMessage("范围超出深圳", 900);
         // }
         flyTo(map, [data.longitude, data.latitude]);
       }
@@ -117,27 +123,26 @@ const changeaddress = defineEmits(["changeaddress"]);
 
 // 父组件回传
 let fatherInfo = defineProps({
-    latitude: {
-        type: Number, //数据类型
-        required: true, //是否必填
-        default: 22.533191, //默认值
-    },
-    longitude: {
-        type: Number, //数据类型
-        required: true, //是否必填
-        default: 113.930478, //默认值
-    },
-    isemitingprovince: {
-        type: Boolean, //数据类型
-        required: true, //是否必填
-        default: false, //默认值
-    }
+  latitude: {
+    type: Number, //数据类型
+    required: true, //是否必填
+    default: 22.533191, //默认值
+  },
+  longitude: {
+    type: Number, //数据类型
+    required: true, //是否必填
+    default: 113.930478, //默认值
+  },
+  isemitingprovince: {
+    type: Boolean, //数据类型
+    required: true, //是否必填
+    default: false, //默认值
+  }
 })
 
 watch(
   () => fatherInfo.isemitingprovince,
   () => {
-    // console.log(fatherInfo.latitude,fatherInfo.longitude)
     flyTo(map, [fatherInfo.longitude, fatherInfo.latitude]);
   },
   { deep: true }
@@ -147,12 +152,19 @@ watch(
 watch(
   [() => arrCenter.value.longitude, () => arrCenter.value.latitude],
   () => {
-    changeaddress("changeaddress", map.value.getCenter());
+    changeaddress("changeaddress", map.value.getCenter(), true);
   },
   { deep: true }
 );
 
-const scollTableTop = ref();
+// 检测是否选中表格元素
+watch(
+  () => ischangeaddress.value,
+  () => {
+    changeaddress("changeaddress", ischangeaddress.value, false);
+  },
+  { deep: true }
+);
 
 // 检测地图是否完成，完成后开始检测移动
 watch(
@@ -187,6 +199,7 @@ watch(
 .mapboxgl-ctrl.mapboxgl-ctrl-attrib {
   display: none !important;
 }
+
 a.mapboxgl-ctrl-logo {
   display: none !important;
 }
@@ -207,6 +220,7 @@ a.mapboxgl-ctrl-logo {
 .chart-box {
   position: relative;
 }
+
 .chart-box .el-button {
   position: absolute;
   right: 10px !important;
@@ -228,7 +242,7 @@ a.mapboxgl-ctrl-logo {
 去除mapboxlogo最后一个div
 子节点序号是从1开始，2是第二个节点, last是最后一个控件
  */
- .mapboxgl-ctrl-bottom-left>div:last-child {
+.mapboxgl-ctrl-bottom-left>div:last-child {
   display: none !important;
 }
 

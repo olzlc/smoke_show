@@ -70,13 +70,6 @@ export function initResultPage(mapObj: Ref<FeatureCollection>) {
 /**
  * 新建地图
  *
- * @param map
- * @param mapDivElement
- * @param keepZoom
- * @param style
- * @param trafficLayersId
- * @param isShowInfo
- * @param nowPlace
  */
 export function mapNew(
   map: Ref<Map>,
@@ -95,9 +88,8 @@ export function mapNew(
 
   trafficLayersId.value = []; // 清空原有的traffic info layers
 
-  // 传递切换样式后的坐标，定位到切换前位置
-  let arr: [number, number] = [113.9343, 22.5366];
-  // 科技园：113.94712703963842, 22.53338124557513
+  // 传递切换样式后的坐标，定位到切换前位置, lng, lat
+  let arr: [number, number] = [113.930478, 22.533191];
   if (
     nowPlace.value[0] !== -1 &&
     nowPlace.value[1] !== -1 &&
@@ -106,6 +98,9 @@ export function mapNew(
   ) {
     arr[0] = nowPlace.value[0];
     arr[1] = nowPlace.value[1];
+  }else if(mapObj.value.features[0] !== null && mapObj.value.features[0]!== undefined){
+    arr[0] = (mapObj.value.features[0] as any).geometry.coordinates[0]
+    arr[1] = (mapObj.value.features[0] as any).geometry.coordinates[1]
   }
 
   let styleUrl: Ref<string> = ref("");
@@ -315,6 +310,7 @@ function loadTrafficInfo(map: Ref<Map>, trafficLayersId: Ref<string[]>) {
  * 新建时加载结果Mapbox部分数据
  * @param map
  * @param isShowInfo
+ * @param mapObj
  */
 function mapNewLoadMapbox(map: Ref<Map>, isShowInfo: Ref<boolean>, mapObj: Ref<FeatureCollection>) {
   if (map.value === null) return;
