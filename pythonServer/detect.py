@@ -137,7 +137,8 @@ def run(
                 for *xyxy, conf, cls in reversed(det):
                     if save_txt:  # 将框信息保存到txt
                         xywh = xyxy2xywh(torch.tensor(xyxy).view(1, 4)).view(1, 4).view(-1).tolist()  # normalized xywh
-                        line = (names[int(cls)], *xywh, round(conf.item(), 2)) if save_conf else (names[int(cls)], *xywh)  # label format
+                        line = (names[int(cls)], *xywh, round(conf.item(), 2)) if save_conf else (
+                        names[int(cls)], *xywh)  # label format
 
                         with open(f'{txt_path}.txt', 'a') as f:
                             f.write(('%s ' * len(line)).rstrip() % line + '\n')
@@ -199,13 +200,18 @@ def run(
         strip_optimizer(weights[0])  # update model (to fix SourceChangeWarning)
 
 
-def parse_opt(pic_name):
+def parse_opt(pic_name='', all_picture=False):
     # 创建了一个 ArgumentParser 类的实例对象，定义 Python 脚本可以接受的命令行参数的方式，这些参数可以包括位置参数和可选参数等
     parser = argparse.ArgumentParser()
     # 接受一个或多个参数值作为模型文件的路径或 Triton 的 URL
     parser.add_argument('--weights', nargs='+', type=str, default=ROOT / 'best.pt', help='model path or triton URL')
     # 接受的类型
-    parser.add_argument('--source', type=str, default=ROOT / 'original_pic' / pic_name, help='file/dir/URL/glob/screen/0(webcam)')
+    if all_picture:
+        parser.add_argument('--source', type=str, default=ROOT / 'original_pic',
+                            help='file/dir')
+    else:
+        parser.add_argument('--source', type=str, default=ROOT / 'original_pic' / pic_name,
+                            help='file/dir')
     # 可选的训练集
     parser.add_argument('--data', type=str, default=ROOT / 'fire-smoke.yaml', help='(optional) dataset.yaml path')
     # 图片大小，可以多个参数，长，宽
@@ -281,10 +287,16 @@ def main(option):
 
 
 def detect_one_picture(pic_name):
-    option = parse_opt(pic_name)
+    option = parse_opt(pic_name, False)
+    main(option)
+
+
+def detect_all_picture():
+    option = parse_opt('', True)
     main(option)
 
 
 if __name__ == "__main__":
     opt = parse_opt('000001.jpg')
+    # opt = parse_opt('', True)
     main(opt)

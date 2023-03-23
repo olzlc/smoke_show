@@ -85,7 +85,8 @@ function createPopup(
   popupIndex: number,
   map: Ref<Map>,
   lngLatData: [WGS84Lng, WGS84Lat],
-  picName: Ref<string>
+  image_data: Ref<string>,
+  info: any
 ) {
   const popupDivIdString = `popup-content-${vueApplicationCount}`;
   const htmlString = `<div id="${popupDivIdString}"></div>`;
@@ -96,7 +97,8 @@ function createPopup(
   // 挂载Vue实例到上面的div中
   nextTick(() => {
     createApp(PointPopup, {
-      picName: picName.value,
+      image_data: image_data.value,
+      info: info
     })
       .use(ElementPlus)
       .mount(`#${popupDivIdString}`);
@@ -126,10 +128,15 @@ function addCorrespondingPointInfo(
     // 复制坐标数组
     let lngLatData: [WGS84Lng, WGS84Lat] = [e.lngLat.lng, e.lngLat.lat];
 
-    let name: Ref<string> = ref(
-      (((e.features as Array<{}>)[0] as any).properties as any).name
+    let image_data: Ref<string> = ref(
+      (((e.features as Array<{}>)[0] as any).properties as any).image_data
     );
-    createPopup(singlePopup, 0, mapOverall, lngLatData, name);
+
+    let info = ref(
+      (((e.features as Array<{}>)[0] as any).properties as any).info
+    );
+
+    createPopup(singlePopup, 0, mapOverall, lngLatData, image_data, info);
   }
 }
 
@@ -176,9 +183,9 @@ export function addPointInfo(
         feature.value.properties as GeoJsonProperties
       );
       let point: Ref<number[]> = ref(geo.value.coordinates as number[]);
-      let picName: Ref<string> = ref(prop.value?.name as string);
+      let image_data: Ref<string> = ref(prop.value?.image_data as string);
       let lngLatData: [WGS84Lng, WGS84Lat] = [point.value[0], point.value[1]];
-      createPopup(popup, i, map, lngLatData, picName);
+      createPopup(popup, i, map, lngLatData, image_data, prop.value?.info);
     }
   } else {
     // 创建悬停但不加入

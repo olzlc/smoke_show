@@ -65,15 +65,14 @@ import { FeatureCollection, Feature, Geometry, GeoJsonProperties } from "geojson
 
 
 let mapObj: Ref<FeatureCollection> = ref({type: "FeatureCollection", features: []} as FeatureCollection<Geometry, GeoJsonProperties>)
-// TODO:样例数据
 // 动态路由实现：https://blog.csdn.net/hsuehgw/article/details/129250004
-if (history.state.params !== undefined) { // 假如是从搜索页跳转回来
+if (history.state.params !== undefined && history.state.params.resultdata.message === '成功加入数据') { // 假如是从搜索页跳转回来
 // const props = defineProps(["resultdata"]);
 // const props = toRefs(props);
 // const route = useRoute()
   const detectResponse: Ref<DetectResponse> = ref({ statusMessage: "", detectBox: [], detectImage: "" })
   const resultdata = history.state.params.resultdata
-  // console.log(resultdata)
+  console.log(resultdata)
 
   // 预测框
   let detectBox: Ref<DetectBox[]> = ref([] as DetectBox[])
@@ -89,18 +88,25 @@ if (history.state.params !== undefined) { // 假如是从搜索页跳转回来
   // 图片以base64传入
   let info = resultdata.image_info
   let all_feature: Ref<Feature[]> = ref([])
-  let feature: Ref<Feature> = ref({ type: "Feature", geometry: { "type": "Point", "coordinates": [info.lng, info.lat] }, properties: { "name": detectPic, "address": info.address } } as Feature)
+  // 新加入图片
+  let feature: Ref<Feature> = ref({ type: "Feature", geometry: { "type": "Point", "coordinates": [info.lng, info.lat] }, properties: { "image_data": detectPic, "info": info } } as Feature)
   all_feature.value.push(feature.value)
+  // 原来已有图片
+  for(let queryResult of resultdata.original_data){
+    feature.value = { type: "Feature", geometry: { "type": "Point", "coordinates": [queryResult.lng, queryResult.lat] }, properties: { "image_data": queryResult.image_data, "info": queryResult } }
+    all_feature.value.push(feature.value)
+  }
   mapObj = ref({ type: "FeatureCollection", features: all_feature.value } as FeatureCollection<Geometry, GeoJsonProperties>)
 } else { // 否则读取样例数据
 
   let all_feature: Ref<Feature[]> = ref([])
   for (let queryResult of mapData.value) {
-    let feature: Ref<Feature> = ref({ type: "Feature", geometry: { "type": "Point", "coordinates": [queryResult.lng, queryResult.lat] }, properties: { "name": queryResult.name, "address": queryResult.address } } as Feature)
+    let feature: Ref<Feature> = ref({ type: "Feature", geometry: { "type": "Point", "coordinates": [queryResult.lng, queryResult.lat] }, properties: { "image_data": queryResult.name, "info": queryResult } } as Feature)
     all_feature.value.push(feature.value)
   }
   mapObj = ref({ type: "FeatureCollection", features: all_feature.value } as FeatureCollection<Geometry, GeoJsonProperties>)
 }
+console.log(mapObj.value)
 // 设置测距
 const isSetDis = ref(false);
 

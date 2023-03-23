@@ -131,8 +131,8 @@ def post_image():
     # db.drop_all()
     # db.create_all()
     try:
-        db.drop_all()
-        db.create_all()
+        # db.drop_all()
+        # db.create_all()
         # 将图片保存在服务器
         keep_path = ROOT / 'original_pic'
         if not os.path.isdir(keep_path):
@@ -152,6 +152,9 @@ def post_image():
 
         # 预测
         detect_one_picture(pic_name)
+
+        # 找到数据库已有数据
+        original_data = select_all_data_origin()
 
         # 将数据存储到数据库
         fire_smoke = FireSmoke(lat=post_data['lat'], lng=post_data['lng'],
@@ -176,11 +179,21 @@ def post_image():
         with open(ROOT / 'detect_pic' / pic_name, 'rb') as f:
             image_data = base64.b64encode(f.read()).decode()
         # 图片信息变为json
-        image_info = {'lat': post_data['lat'], 'lng': post_data['lng'], 'address': file.filename}
+        image_info = {'lat': post_data['lat'], 'lng': post_data['lng'], 'picOriginalName': file.filename,
+                      'start_time': post_data['period'][0], 'end_time': post_data['period'][1],
+                      'fireType': post_data['fireType'], 'fireIntensity': post_data['fireIntensity'],
+                      'victim': post_data['victim'], 'province': post_data['province'][0],
+                      'city': post_data['province'][1], 'area': post_data['province'][2],
+                      'beaufort': post_data['beaufort'], 'windDirection': post_data['windDirection'],
+                      'rainfall': post_data['rainfall'], 'temperature': post_data['temperature'],
+                      'humidity': post_data['humidity'], 'fireBrigade': post_data['fireBrigade'],
+                      'money': post_data['money'], 'picDatasetName': pic_name,
+                      'address': post_data['address']
+                      }
 
         # 返回 JSON 数据
         return jsonify(
-            {'message': '成功加入数据', 'detect_box': json_str, 'detect_image': image_data, 'image_info': image_info})
+            {'message': '成功加入数据', 'detect_box': json_str, 'detect_image': image_data, 'image_info': image_info, 'original_data': original_data})
         # return jsonify(post_data)
     except Exception as e:
         print(e)
@@ -189,7 +202,7 @@ def post_image():
 
 
 # @app.route("/add_all_data_origin", methods=['GET', 'POST'])
-# 记得example.txt不要有空行，并且图片记得加入
+# 记得example.txt不要有空行和逗号，并且图片记得加入
 def add_all_data_origin():
     app.app_context().push()
     with app.app_context():
@@ -221,8 +234,37 @@ def add_all_data_origin():
         db.session.commit()
 
 
+def select_all_data_origin():
+    # app.app_context().push()
+    # with app.app_context():
+    exist_data = []
+    cur.execute("select * from fire_smoke")
+    data = cur.fetchall()
+    # 名称
+    fields = [desc[0] for desc in cur.description]
+    for item in data:
+        item = dict(zip(fields, item))
+        with open(ROOT / 'detect_pic' / item['picDatasetName'], 'rb') as f:
+            image_data = base64.b64encode(f.read()).decode()
+        image_info = {'lat': item['lat'], 'lng': item['lng'], 'picOriginalName': item['picOriginalName'],
+                      'start_time': item['start_time'], 'end_time': item['end_time'],
+                      'fireType': item['fireType'], 'fireIntensity': item['fireIntensity'],
+                      'victim': item['victim'], 'province': item['province'],
+                      'city': item['city'], 'area': item['area'],
+                      'beaufort': item['beaufort'], 'windDirection': item['windDirection'],
+                      'rainfall': item['rainfall'], 'temperature': item['temperature'],
+                      'humidity': item['humidity'], 'fireBrigade': item['fireBrigade'],
+                      'money': item['money'], 'picDatasetName': item['picDatasetName'],
+                      'address': item['address'], 'image_data': image_data
+                      }
+        # print(image_info)
+        exist_data.append(image_info)
+    return exist_data
+
+
 # 运行应用程序
 if __name__ == '__main__':
     # add_all_data_origin()
+    # select_all_data_origin()
     # 一定注意端口是否被占用
     app.run(port=6000)

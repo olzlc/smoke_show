@@ -9,7 +9,7 @@
           <router-link to="/Mapbox">地图展示</router-link>
         </el-menu-item>
         <el-menu-item index="3">
-          <router-link to="/MapSelect">探索数据</router-link>
+          <router-link to="/Poishow">探索数据</router-link>
         </el-menu-item>
       </el-menu>
     </div>
