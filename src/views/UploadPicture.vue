@@ -50,14 +50,14 @@
                         </el-col>
                         <el-col :span="12">
                             <el-form-item label="受害人数">
-                                <el-input-number v-model="picForm.victim" :min="0" style="width:160px" />
+                                <el-input-number v-model="picForm.victim" :min="0" style="width:160px" :precision="0" />
                             </el-form-item>
                         </el-col>
                     </el-row>
                     <el-row class="form-row">
                         <el-col :span="12">
                             <el-form-item label="消防队伍数量">
-                                <el-input-number v-model="picForm.fireBrigade" :min="0" style="width:160px" />
+                                <el-input-number v-model="picForm.fireBrigade" :min="0" style="width:160px" :precision="0" />
                             </el-form-item>
                         </el-col>
                         <el-col :span="12">
@@ -95,7 +95,7 @@
                             </el-form-item>
                         </el-col>
                         <el-col :span="12">
-                            <el-form-item label="每天降雨量(毫米)">
+                            <el-form-item label="降雨量(毫米)">
                                 <el-input-number v-model="picForm.rainfall" :min="0" :step="3" style="width:160px" />
                                 <!-- <div style="margin-left: 10px;">毫米</div> -->
                             </el-form-item>
@@ -130,7 +130,7 @@
                             </el-radio-group>
                         </el-form-item>
                     </el-row>
-                    <el-divider><el-icon><star-filled /></el-icon>基础信息</el-divider>
+                    <el-divider><el-icon><star-filled /></el-icon>基础地址信息</el-divider>
 
                     <el-row class="form-row">
                         <el-col :span="12">
@@ -250,7 +250,6 @@
                 </el-form>
             </div>
         </div>
-        <!-- todo: 加入拖拽定位 -->
         <div style="padding-left: 10px;padding-right: 10px;">
             <el-divider><el-icon><star-filled /></el-icon>详细地址信息</el-divider>
             <div style="padding-left: 20px; padding-right: 50px;padding-bottom: 30px;">
@@ -348,7 +347,7 @@ const handleChange: UploadProps['onChange'] = (uploadFile, uploadFiles) => {
     if (uploadFile.raw) {
         const isJPG = uploadFile.raw.type === "image/jpeg" || uploadFile.raw.type === "image/png" || uploadFile.raw.type === "image/jpg";
         if (!isJPG) {
-            openErrorMessage("上传图片只能是 JPG 、png 格式!");
+            openErrorMessage("上传图片只能是JPG、PNG格式!");
             uploadFiles.splice(-1, 1);//移除错误文件
             return false;
         }
