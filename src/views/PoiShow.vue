@@ -1,56 +1,196 @@
-<template><div class="left-box">
-  <el-form :model="picForm" label-width="150px" label-position="left">
-                    <el-row class="form-row">
-                        <el-col :span="12">
-                            <el-form-item>
-                                <template #label>
-                                    <el-space :size="'small'">
-                                        <div>风速强度(级)</div>
-                                        <el-popover :width="265"
-                                            popper-style="box-shadow: rgb(14 18 22 / 35%) 0px 10px 38px -10px, rgb(14 18 22 / 20%) 0px 10px 20px -15px; padding: 10px;">
-                                            <template #reference>
-                                                <el-avatar :icon="Info" />
-                                            </template>
-                                            <template #default>
-                                                <p>使用Beaufort风力等级标准对风速进行量化描述，该标准是基于对人类、动物和自然环境的观察，它把风速分成12级</p>
-                                                <p>具体标准为:</p>
-                                                <p>0 - 无风; 1 - 软微风; 2 - 轻微风;3 - 轻风; 4 - 清风; 5 - 和风; 6 - 轻劲风; 7 - 劲风; 8 -
-                                                    猛烈风; 9
-                                                    - 狂风; 10 - 暴风; 11 - 大暴风; 12 - 飓风</p>
-                                            </template>
-                                        </el-popover>
-                                    </el-space>
-                                </template>
-                                <el-input-number v-model="picForm.beaufort" :min="0" :max='12' style="width:160px" />
-                                <!-- <div style="margin-left: 10px;">级</div> -->
-                            </el-form-item>
-                        </el-col>
-                    </el-row></el-form>
-                  </div>
+<template>
+    <!-- <div id="map"></div>
+
+    <div class="map-overlay">
+        <fieldset>
+            <input id="feature-filter" type="text" placeholder="Filter results by name">
+        </fieldset>
+        <div id="feature-listing" class="listing"></div>
+    </div> -->
 </template>
 
 <script lang="ts" setup>
-import { Info } from "@icon-park/vue-next";
-let picForm = {beaufort: 0};
+
+// import mapboxgl, { Map } from "mapbox-gl";
+// import MapboxLanguage from "@mapbox/mapbox-gl-language"; // 加中文
+// mapboxgl.accessToken = 'YOUR_MAPBOX_ACCESS_TOKEN';
+// const map = new mapboxgl.Map({
+//     container: 'map',
+//     // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
+//     style: 'mapbox://styles/mapbox/streets-v12',
+//     center: [-98, 38.88],
+//     maxZoom: 5,
+//     minZoom: 1,
+//     zoom: 3
+// });
+
+// // Holds visible airport features for filtering
+// let airports = [];
+
+// // Create a popup, but don't add it to the map yet.
+// const popup = new mapboxgl.Popup({
+//     closeButton: false
+// });
+
+// const filterEl = document.getElementById('feature-filter');
+// const listingEl = document.getElementById('feature-listing');
+
+// function renderListings(features: any) {
+//     const empty = document.createElement('p');
+//     // Clear any existing listings
+//     if (listingEl && filterEl && filterEl.parentNode) {
+//         listingEl.innerHTML = '';
+//         if (features.length) {
+//             for (const feature of features) {
+//                 const itemLink = document.createElement('a');
+//                 const label = `${feature.properties.name} (${feature.properties.abbrev})`;
+//                 itemLink.href = feature.properties.wikipedia;
+//                 itemLink.target = '_blank';
+//                 itemLink.textContent = label;
+//                 itemLink.addEventListener('mouseover', () => {
+//                     // Highlight corresponding feature on the map
+//                     popup
+//                         .setLngLat(feature.geometry.coordinates)
+//                         .setText(label)
+//                         .addTo(map);
+//                 });
+//                 listingEl.appendChild(itemLink);
+//             }
+
+//             // Show the filter input
+//             (filterEl.parentNode as any).style.display = 'block';
+//         } else if (features.length === 0 && (filterEl as any).value !== '') {
+//             empty.textContent = 'No results found';
+//             listingEl.appendChild(empty);
+//         } else {
+//             empty.textContent = 'Drag the map to populate results';
+//             listingEl.appendChild(empty);
+
+//             // Hide the filter input
+//             filterEl.parentNode.style.display = 'none';
+
+//             // remove features filter
+//             map.setFilter('airport', ['has', 'abbrev']);
+//         }
+//     }
+
+// }
+
+// function normalize(string) {
+//     return string.trim().toLowerCase();
+// }
+
+// // Because features come from tiled vector data,
+// // feature geometries may be split
+// // or duplicated across tile boundaries.
+// // As a result, features may appear
+// // multiple times in query results.
+// function getUniqueFeatures(features, comparatorProperty) {
+//     const uniqueIds = new Set();
+//     const uniqueFeatures = [];
+//     for (const feature of features) {
+//         const id = feature.properties[comparatorProperty];
+//         if (!uniqueIds.has(id)) {
+//             uniqueIds.add(id);
+//             uniqueFeatures.push(feature);
+//         }
+//     }
+//     return uniqueFeatures;
+// }
+
+// map.on('load', () => {
+//     map.addSource('airports', {
+//         'type': 'vector',
+//         'url': 'mapbox://mapbox.04w69w5j'
+//     });
+//     map.addLayer({
+//         'id': 'airport',
+//         'source': 'airports',
+//         'source-layer': 'ne_10m_airports',
+//         'type': 'circle',
+//         'paint': {
+//             'circle-color': '#4264fb',
+//             'circle-radius': 4,
+//             'circle-stroke-width': 2,
+//             'circle-stroke-color': '#ffffff'
+//         }
+//     });
+
+//     map.on('movestart', () => {
+//         // reset features filter as the map starts moving
+//         map.setFilter('airport', ['has', 'abbrev']);
+//     });
+
+//     map.on('moveend', () => {
+//         const features = map.queryRenderedFeatures({ layers: ['airport'] });
+
+//         if (features) {
+//             const uniqueFeatures = getUniqueFeatures(features, 'iata_code');
+//             // Populate features for the listing overlay.
+//             renderListings(uniqueFeatures);
+
+//             // Clear the input container
+//             filterEl.value = '';
+
+//             // Store the current features in sn `airports` variable to
+//             // later use for filtering on `keyup`.
+//             airports = uniqueFeatures;
+//         }
+//     });
+
+//     map.on('mousemove', 'airport', (e) => {
+//         // Change the cursor style as a UI indicator.
+//         map.getCanvas().style.cursor = 'pointer';
+
+//         // Populate the popup and set its coordinates based on the feature.
+//         const feature = e.features[0];
+//         popup
+//             .setLngLat(feature.geometry.coordinates)
+//             .setText(
+//                 `${feature.properties.name} (${feature.properties.abbrev})`
+//             )
+//             .addTo(map);
+//     });
+
+//     map.on('mouseleave', 'airport', () => {
+//         map.getCanvas().style.cursor = '';
+//         popup.remove();
+//     });
+
+//     filterEl.addEventListener('keyup', (e) => {
+//         const value = normalize(e.target.value);
+
+//         // Filter visible features that match the input value.
+//         const filtered = [];
+//         for (const feature of airports) {
+//             const name = normalize(feature.properties.name);
+//             const code = normalize(feature.properties.abbrev);
+//             if (name.includes(value) || code.includes(value)) {
+//                 filtered.push(feature);
+//             }
+//         }
+
+//         // Populate the sidebar with filtered results
+//         renderListings(filtered);
+
+//         // Set the filter to populate features into the layer.
+//         if (filtered.length) {
+//             map.setFilter('airport', [
+//                 'match',
+//                 ['get', 'abbrev'],
+//                 filtered.map((feature) => {
+//                     return feature.properties.abbrev;
+//                 }),
+//                 true,
+//                 false
+//             ]);
+//         }
+//     });
+
+//     // Call this function on initialization
+//     // passing an empty array to render an empty state
+//     renderListings([]);
+// });
 </script>
 
-<style scoped>
-.left-box {
-    display: block;
-    float: left;
-    height: 100%;
-    width: 47%;
-    margin-left: 100px;
-
-}
-/* 提示图标信息 */
-.el-avatar--default {
-    --el-avatar-size: 20px;
-}
-
-/* 提示图标信息 */
-.el-avatar {
-    --el-avatar-text-color: #000;
-    --el-avatar-bg-color: #fff;
-}
-</style>
+<style scoped></style>

@@ -63,19 +63,55 @@ export type MapType =
   | "satellite-info";
 
 /**
- * 经纬度名字信息
+ * 图片信息
  */
 export class selectInfo {
   lat: number;
   lng: number;
   address: string;
   name: string;
+  start_time: String;
+  end_time: String;
+  picOriginalName: string;
+  fireType: string;
+  fireIntensity: string;
+  victim: number;
+  beaufort: number;
+  money: number;
+  fireBrigade: number;
+  rainfall: number;
+  temperature: number;
+  humidity: number;
+  windDirection: string;
+  province: string;
+  city: string;
+  area: string;
+  picDatasetName: string;
 
-  constructor(lat: number, lng: number, address: string, name: string) {
+  constructor(lat: number, lng: number, address: string, name: string, start_time: String, end_time: String, picOriginalName: string,
+    fireType: string, fireIntensity: string, victim: number, beaufort: number, money: number, fireBrigade: number, rainfall: number,
+    temperature: number, humidity: number, windDirection: string, province: string, city: string, area: string, picDatasetName: string) {
     this.lat = lat;
     this.lng = lng;
     this.address = address;
     this.name = name;
+    this.start_time = start_time;
+    this.end_time = end_time;
+    this.picOriginalName = picOriginalName;
+    this.fireType = fireType;
+    this.fireIntensity = fireIntensity;
+    this.victim = victim;
+    this.beaufort = beaufort;
+    this.money = money;
+    this.fireBrigade = fireBrigade;
+    this.rainfall = rainfall;
+    this.temperature = temperature;
+    this.humidity = humidity;
+    this.windDirection = windDirection;
+    this.province = province;
+    this.city = city;
+    this.area = area;
+    this.picDatasetName = picDatasetName;
   }
 }
 

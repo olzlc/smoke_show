@@ -16,7 +16,7 @@ import {
   addPointInfo,
   addPointLayer,
 } from "@/composables/result-page/controlInfo";
-import { FeatureCollection } from "geojson";
+import { FeatureCollection, Geometry, GeoJsonProperties } from "geojson";
 
 /**
  * 通用的初始化地图
@@ -30,6 +30,10 @@ export function initResultPage(mapObj: Ref<FeatureCollection>) {
   const map: Ref<Map> = ref({}) as Ref<Map>;
   const trafficLayersId: Ref<string[]> = ref([]);
   const isSetMapStyleIng: Ref<boolean> = ref(true);
+  const isFlitering: Ref<boolean> = ref(false)
+  const fliterMapObj: Ref<FeatureCollection> = ref({ type: "FeatureCollection", features: [] } as FeatureCollection<Geometry, GeoJsonProperties>)
+
+
   onMounted(_initResultPage);
 
   function _initResultPage() {
@@ -45,7 +49,9 @@ export function initResultPage(mapObj: Ref<FeatureCollection>) {
     mapDivElement,
     trafficLayersId,
     isShowInfo,
-    isSetMapStyleIng
+    isSetMapStyleIng,
+    isFlitering,
+    fliterMapObj
   };
 
   /**
@@ -62,7 +68,9 @@ export function initResultPage(mapObj: Ref<FeatureCollection>) {
       trafficLayersId,
       isShowInfo,
       mapObj,
-      isSetMapStyleIng
+      isSetMapStyleIng,
+      isFlitering,
+      fliterMapObj
     );
   }
 }
@@ -80,6 +88,8 @@ export function mapNew(
   isShowInfo: Ref<boolean>,
   mapObj: Ref<FeatureCollection>,
   isSetMapStyleIng: Ref<boolean>,
+  isFlitering: Ref<boolean>,
+  fliterMapObj: Ref<FeatureCollection>,
   nowPlace: Ref<number[]> = ref([-1, -1])
 ) {
   if (mapDivElement.value === null) {
@@ -170,7 +180,7 @@ export function mapNew(
   loadTrafficInfo(map, trafficLayersId);
 
   // 加载点信息
-  mapNewLoadMapbox(map, isShowInfo, mapObj);
+  mapNewLoadMapbox(map, isShowInfo, mapObj, isFlitering, fliterMapObj);
 
   // 地图准备好后再修改不为修改中
   map.value.on("load", () => {
@@ -312,7 +322,7 @@ function loadTrafficInfo(map: Ref<Map>, trafficLayersId: Ref<string[]>) {
  * @param isShowInfo
  * @param mapObj
  */
-function mapNewLoadMapbox(map: Ref<Map>, isShowInfo: Ref<boolean>, mapObj: Ref<FeatureCollection>) {
+function mapNewLoadMapbox(map: Ref<Map>, isShowInfo: Ref<boolean>, mapObj: Ref<FeatureCollection>, isFlitering: Ref<boolean>, fliterMapObj: Ref<FeatureCollection>,) {
   if (map.value === null) return;
   map.value.on("load", () => {
     if (map.value.getLayer("measure-points")) {
@@ -321,6 +331,6 @@ function mapNewLoadMapbox(map: Ref<Map>, isShowInfo: Ref<boolean>, mapObj: Ref<F
       map.value.removeSource("geojson");
     }
     addPointLayer(map, mapObj);
-    addPointInfo(map, isShowInfo, mapObj);
+    addPointInfo(map, isShowInfo, mapObj, isFlitering, fliterMapObj);
   });
 }

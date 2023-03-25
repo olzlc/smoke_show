@@ -3,28 +3,45 @@
     <!-- 地图 -->
     <div class="chart" id="mapContainer" ref="mapDivElement" />
     <!-- 左边搜索部分 -->
-    <div class="search">
+    <el-button v-if="isSetMapStyleIng" :loading="true" style="width: 440px;position: absolute;top: 15px;left: 25px;">加载中</el-button>
+    <div v-else class="search">
       <div class="search_div">
-        <el-select v-model="filterName" filterable placeholder="需要筛选的属性" style="width: 140px;">
+        <el-select v-model="filterName" filterable placeholder="需要筛选的属性" style="width: 150px;">
           <!-- <el-option v-for="item in filterAttribute" :key="item.value" :label="item.label" :value="item.value" /> -->
           <el-option-group v-for="group in filterAttribute" :key="group.label" :label="group.label">
             <el-option v-for="item in group.options" :key="item.value" :label="item.label" :value="item.value" />
           </el-option-group>
         </el-select>
       </div>
-      <div class="search_div" v-if="isNumber">
+      <div class="search_div" v-if="isWhatType === 0">
         <el-select v-model="filterSign" filterable placeholder="判断类型" style="width: 100px;">
           <el-option v-for="item in signOption" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
       </div>
-      <div class="search_div" v-if="isNumber">
+      <div class="search_div" v-if="isWhatType === 0">
         <el-input-number v-model="filterNum" :min="0" style="width: 110px" />
       </div>
-      <div class="search_div" v-else>
+      <div class="search_div" v-else-if="isWhatType === 1">
         <el-input v-model="filterString" placeholder="请输入字符串" style="width: 200px" />
       </div>
+      <div class="search_div" v-else-if="isWhatType === 2">
+        <el-select v-model="singleChoice" filterable placeholder="选项" style="width: 120px;">
+          <el-option v-for="item in fireTypeOption" :key="item.value" :label="item.label" :value="item.value" />
+        </el-select>
+      </div>
+      <div class="search_div" v-else-if="isWhatType === 3">
+        <el-select v-model="singleChoice" filterable placeholder="选项" style="width: 100px;">
+          <el-option v-for="item in fireIntensityOption" :key="item.value" :label="item.label" :value="item.value" />
+        </el-select>
+      </div>
+      <div class="search_div" v-else-if="isWhatType === 4">
+        <el-select v-model="singleChoice" filterable placeholder="选项" style="width: 100px;">
+          <el-option v-for="item in windDirectionOption" :key="item.value" :label="item.label" :value="item.value" />
+        </el-select>
+      </div>
       <div class="search_div">
-        <el-button type="primary" plain @click="filterHandler">筛选</el-button>
+        <el-button type="primary" v-if='!isFlitering' @click="filterHandler" plain>筛选</el-button>
+        <el-button type="danger" v-else @click="deletefilterHandler" plain>取消筛选</el-button>
       </div>
     </div>
     <!-- 测距部分代码 -->
@@ -78,12 +95,12 @@
 <script lang="ts" setup>
 import { Ref, ref, watch, toRefs } from "vue";
 import { useRoute } from 'vue-router'
-import { MapType, DetectResponse, DetectBox } from "@/composables/baseTypes";
+import { MapType, DetectResponse, DetectBox, selectInfo } from "@/composables/baseTypes";
 import { setMapStyleMapbox } from "@/composables/result-page/changeMapStyle";
 import { initResultPage } from "@/composables/result-page/initMap";
 import { addPointInfo } from "@/composables/result-page/controlInfo";
 import { mappingStatusChange } from "@/composables/result-page/distanceMapping";
-import { removeElButtonFocus } from "@/composables/utilsFunction";
+import { openErrorMessage, removeElButtonFocus } from "@/composables/utilsFunction";
 import { changeTrafficMapVisibility } from "@/composables/result-page/traffic-layers";
 import { Road, Ruler, Message } from "@icon-park/vue-next";
 import mapData from "@/composables/result-page/exampleData";
@@ -115,12 +132,14 @@ if (history.state.params !== undefined && history.state.params.resultdata.messag
   // 图片以base64传入
   let info = resultdata.image_info
   let all_feature: Ref<Feature[]> = ref([])
+
+
   // 新加入图片
-  let feature: Ref<Feature> = ref({ type: "Feature", geometry: { "type": "Point", "coordinates": [info.lng, info.lat] }, properties: { "image_data": detectPic, "info": info } } as Feature)
+  let feature: Ref<Feature> = ref({ type: "Feature", geometry: { "type": "Point", "coordinates": [info.lng, info.lat] }, properties: { ...info, image_data: detectPic } } as Feature)
   all_feature.value.push(feature.value)
   // 原来已有图片
   for (let queryResult of resultdata.original_data) {
-    feature.value = { type: "Feature", geometry: { "type": "Point", "coordinates": [queryResult.lng, queryResult.lat] }, properties: { "image_data": queryResult.image_data, "info": queryResult } }
+    feature.value = { type: "Feature", geometry: { "type": "Point", "coordinates": [queryResult.lng, queryResult.lat] }, properties: { ...queryResult, image_data: queryResult.image_data} }
     all_feature.value.push(feature.value)
   }
   mapObj = ref({ type: "FeatureCollection", features: all_feature.value } as FeatureCollection<Geometry, GeoJsonProperties>)
@@ -128,7 +147,7 @@ if (history.state.params !== undefined && history.state.params.resultdata.messag
 
   let all_feature: Ref<Feature[]> = ref([])
   for (let queryResult of mapData.value) {
-    let feature: Ref<Feature> = ref({ type: "Feature", geometry: { "type": "Point", "coordinates": [queryResult.lng, queryResult.lat] }, properties: { "image_data": queryResult.name, "info": queryResult } } as Feature)
+    let feature: Ref<Feature> = ref({ type: "Feature", geometry: { "type": "Point", "coordinates": [queryResult.lng, queryResult.lat] }, properties:  { ...queryResult, image_data: queryResult.name } } as Feature)
     all_feature.value.push(feature.value)
   }
   mapObj = ref({ type: "FeatureCollection", features: all_feature.value } as FeatureCollection<Geometry, GeoJsonProperties>)
@@ -143,9 +162,10 @@ const {
   mapDivElement,
   trafficLayersId,
   isShowInfo,
-  isSetMapStyleIng
+  isSetMapStyleIng,
+  isFlitering,
+  fliterMapObj
 } = initResultPage(mapObj);
-
 
 // 设置地图类型
 const isSatellite = ref(false);
@@ -167,6 +187,17 @@ const setMapStyleHandler = (event: Event) => {
   else
     style.value = "street-map";
 
+  // 改变地图类型前关闭筛选功能
+  isFlitering.value = false;
+  filterName.value = '';
+  filterSign.value = '';
+  isWhatType.value = 0;
+  singleChoice.value = '';
+  filterString.value = '';
+  filterNum.value = 0;
+  fliterMapObj.value = { type: "FeatureCollection", features: [] } as FeatureCollection<Geometry, GeoJsonProperties>
+
+
   let arr: Ref<number[]> = ref([map.value.getCenter().lng, map.value.getCenter().lat]);
   setMapStyleMapbox(
     map,
@@ -177,8 +208,11 @@ const setMapStyleHandler = (event: Event) => {
     isShowInfo,
     mapObj,
     isSetMapStyleIng,
+    isFlitering,
+    fliterMapObj,
     arr
   );
+  
   removeElButtonFocus(event);
 };
 
@@ -199,7 +233,7 @@ const changeTrafficMapVisibilityHandler = (event: Event) => {
 
 const showInfoButtonHandler = (event: Event) => {
   isShowInfo.value = !isShowInfo.value
-  addPointInfo(map, isShowInfo, mapObj);
+  addPointInfo(map, isShowInfo, mapObj, isFlitering, fliterMapObj);
   removeElButtonFocus(event);
 };
 
@@ -213,41 +247,167 @@ const filterName = ref('')
 // 筛选符号 
 const filterSign = ref('')
 
-// 属性选项, 符号选项
-const {filterAttribute, signOption} = setupFilter();
+// 属性选项, 符号选项, 火灾类型选项, 火势强度选项, 风向选项
+const { filterAttribute, signOption, fireTypeOption, fireIntensityOption, windDirectionOption } = setupFilter();
 // 筛选数字
 const filterNum = ref(0)
 
 // 输入字符串
 const filterString = ref('');
 
-const isNumber = ref(true)
-// 是否为数字类型
-const isNumberType = () => {
-  // 判断当前选中的属性是否为数值类型
-  for(let item of filterAttribute){
-      for(let item_value of item.options){
-        if(item_value.value === filterName.value){
-          if(item.label==='数值类型')
-            return true;
+// 火灾类型选项, 火势强度选项, 风向选项选择
+const singleChoice = ref('')
+
+// 0表示数字类型，1表示字符串类型，2表示火灾类型, 3表示火势强度, 4表示风向选项
+const isWhatType = ref(0)
+
+// 判断当前类型
+const objectType = () => {
+  for (let item of filterAttribute) {
+    for (let item_value of item.options) {
+      if (item_value.value === filterName.value) {
+        if (item.label === '数值类型')
+          return 0;
+        else if (item.label === '字符串类型')
+          return 1;
+        else {
+          if (filterName.value === 'fireType')
+            return 2;
+          if (filterName.value === 'fireIntensity')
+            return 3;
           else
-            return false;
+            return 4;
         }
       }
+    }
   }
-  return true;
+  return 0;
 };
 
 // 监测筛选是字符串还是数值类型
 watch(
   () => filterName,
   () => {
-    isNumber.value = isNumberType()
+    isWhatType.value = objectType()
+    singleChoice.value = ''
   },
   { deep: true }
 );
 
+// 字符串去空格转小写
+function normalize(string: string) {
+  return string.trim().toLowerCase();
+}
+
 const filterHandler = (event: Event) => {
+  // 检查是否出错
+  if(filterName.value === ''){
+    openErrorMessage('请填写筛选类型')
+    return
+  }
+  if(isWhatType.value === 0){
+    if(filterSign.value === ''){
+      openErrorMessage('请填写符号判断')
+      return
+    }
+    if(filterNum.value === null || filterNum.value === undefined){
+      openErrorMessage('请填写判断数字')
+      return
+    }
+  }
+  else if(isWhatType.value === 1){
+    if(filterString.value === ''){
+      openErrorMessage('请填写筛选字符串')
+      return
+    }
+  }
+  else{
+    if(singleChoice.value === ''){
+      openErrorMessage('请填写筛选选项')
+      return
+    }
+  }
+  isFlitering.value = true
+  enum Operator {
+    GreaterThan = '>',
+    LessThan = '<',
+    Equal = '==',
+    GreaterThanOrEqual = '>=',
+    LessThanOrEqual = '<='
+  }
+  let fliter_feature: Ref<Feature[]> = ref([])
+
+  if (isWhatType.value === 0) {
+    for (const feature of mapObj.value.features) {
+      let prop = feature.properties
+      if (prop) {
+        if (filterSign.value === Operator.GreaterThan) {
+          if (prop[filterName.value] > filterNum.value) {
+            fliter_feature.value.push(feature)
+          }
+        } else if (filterSign.value === Operator.LessThan) {
+          if (prop[filterName.value] < filterNum.value) {
+            fliter_feature.value.push(feature)
+          }
+        } else if (filterSign.value === Operator.Equal) {
+          if (prop[filterName.value] === filterNum.value) {
+            fliter_feature.value.push(feature)
+          }
+        } else if (filterSign.value === Operator.GreaterThanOrEqual) {
+          if (prop[filterName.value] >= filterNum.value) {
+            fliter_feature.value.push(feature)
+          }
+        } else if (filterSign.value === Operator.LessThanOrEqual) {
+          if (prop[filterName.value] <= filterNum.value) {
+            fliter_feature.value.push(feature)
+          }
+        } else {
+          openErrorMessage("出现筛选错误！")
+        }
+      }
+    }
+  }
+  else if (isWhatType.value === 1) {
+    for (const feature of mapObj.value.features) {
+      let prop = feature.properties
+      if (prop && normalize(prop[filterName.value]).includes(normalize(filterString.value))) {
+        fliter_feature.value.push(feature)
+      }
+    }
+  }
+  else {
+    for (const feature of mapObj.value.features) {
+      let prop = feature.properties
+      if (prop && prop[filterName.value] === singleChoice.value) {
+        fliter_feature.value.push(feature)
+      }
+    }
+  }
+  // 输出最后筛选结果
+  // for (const feature of fliter_feature.value) {
+  //   const info = feature.properties?.info
+  //   console.log(info[filterName.value])
+  // }
+  fliterMapObj.value = { type: "FeatureCollection", features: fliter_feature.value } as FeatureCollection<Geometry, GeoJsonProperties>
+  addPointInfo(map, isShowInfo, mapObj, isFlitering, fliterMapObj);
+  console.log(fliter_feature.value)
+  
+  // 图层筛选
+  if (isWhatType.value === 0) {
+    map.value.setFilter('measure-points', [filterSign.value, ['get', filterName.value], filterNum.value]);
+  } else if (isWhatType.value === 1) {
+    map.value.setFilter('measure-points', ['in', filterString.value, ['get', filterName.value]]);
+  } else {
+    map.value.setFilter('measure-points', ['==', ['get', filterName.value], singleChoice.value])
+  }
+  removeElButtonFocus(event);
+}
+
+const deletefilterHandler = (event: Event) => {
+  map.value.setFilter('measure-points', null);
+  isFlitering.value = false;
+  fliterMapObj.value = { type: "FeatureCollection", features: [] } as FeatureCollection<Geometry, GeoJsonProperties>
+  addPointInfo(map, isShowInfo, mapObj, isFlitering, fliterMapObj);
   removeElButtonFocus(event);
 }
 </script>
@@ -348,5 +508,26 @@ body {
 /* 筛选框 */
 .el-select-dropdown__wrap {
   max-height: 200px;
+}
+
+::-webkit-scrollbar {
+  /*滚动条整体样式*/
+  width: 7px;
+  /*高宽分别对应横竖滚动条的尺寸*/
+  height: 7px;
+}
+
+::-webkit-scrollbar-thumb {
+  /*滚动条里面小方块*/
+  border-radius: 10px;
+  box-shadow: inset 0 0 5px rgba(97, 184, 179, 0.1);
+  background: #909399;
+}
+
+::-webkit-scrollbar-track {
+  /*滚动条里面轨道*/
+  box-shadow: inset 0 0 5px rgba(87, 175, 187, 0.1);
+  border-radius: 10px;
+  background: #ededed;
 }
 </style>

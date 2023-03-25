@@ -13,8 +13,8 @@ import { FeatureCollection } from "geojson";
  * @param style
  * @param trafficLayersId
  */
-export function setMapStyleMapbox(map: Ref<Map>, keepZoom: Ref<number>, mapDivElement: Ref<HTMLDivElement>, style: MapType, trafficLayersId: Ref<string[]>, isShowInfo: Ref<boolean>, mapObj: Ref<FeatureCollection>, isSetMapStyleIng:Ref<boolean>, nowPlace: Ref<number[]>) {
+export function setMapStyleMapbox(map: Ref<Map>, keepZoom: Ref<number>, mapDivElement: Ref<HTMLDivElement>, style: MapType, trafficLayersId: Ref<string[]>, isShowInfo: Ref<boolean>, mapObj: Ref<FeatureCollection>, isSetMapStyleIng:Ref<boolean>, isFlitering:Ref<boolean>, fliterMapObj: Ref<FeatureCollection>, nowPlace: Ref<number[]>) {
     mapDivElement.value.innerHTML = '<div id="distance" class="distance-container" />'; // 如果不设为空，就会有多个地图
     keepZoom.value = map.value.getZoom();
-    mapNew(map, mapDivElement, keepZoom, style, trafficLayersId, isShowInfo, mapObj, isSetMapStyleIng, nowPlace);
+    mapNew(map, mapDivElement, keepZoom, style, trafficLayersId, isShowInfo, mapObj, isSetMapStyleIng, isFlitering, fliterMapObj, nowPlace);
 }

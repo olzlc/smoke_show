@@ -153,7 +153,9 @@ function removeCorrespondingPointInfo() {
 export function addPointInfo(
   map: Ref<Map>,
   isShowInfo: Ref<boolean>,
-  mapObj: Ref<FeatureCollection>
+  mapObj: Ref<FeatureCollection>,
+  isFlitering: Ref<boolean>,
+  fliterMapObj: Ref<FeatureCollection>,
 ) {
   // 光标不变
   if (map.value.getCanvas().style.cursor !== "")
@@ -169,9 +171,14 @@ export function addPointInfo(
   map.value.off("mouseleave", "measure-points", removeCorrespondingPointInfo);
 
   if (isShowInfo.value) {
-    for (let i = 0; i < mapObj.value.features.length; i++) {
+    let newMapObj: Ref<FeatureCollection> = ref({} as FeatureCollection)
+    if(isFlitering.value)
+      newMapObj.value = fliterMapObj.value
+    else
+      newMapObj.value = mapObj.value
+    for (let i = 0; i < newMapObj.value.features.length; i++) {
       let feature: Ref<Feature<Geometry, GeoJsonProperties>> = ref(
-        mapObj.value.features[i] as Feature<Geometry, GeoJsonProperties>
+        newMapObj.value.features[i] as Feature<Geometry, GeoJsonProperties>
       );
       const popup = new mapboxgl.Popup({
         closeButton: false,
@@ -185,7 +192,7 @@ export function addPointInfo(
       let point: Ref<number[]> = ref(geo.value.coordinates as number[]);
       let image_data: Ref<string> = ref(prop.value?.image_data as string);
       let lngLatData: [WGS84Lng, WGS84Lat] = [point.value[0], point.value[1]];
-      createPopup(popup, i, map, lngLatData, image_data, prop.value?.info);
+      createPopup(popup, i, map, lngLatData, image_data, prop.value);
     }
   } else {
     // 创建悬停但不加入
