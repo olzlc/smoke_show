@@ -143,7 +143,7 @@
                   开始时间
                 </div>
               </template>
-              {{ picData.info.start_time }}
+              {{ formatDate(picData.info.start_time) }}
             </el-descriptions-item>
             <el-descriptions-item>
               <template #label>
@@ -151,7 +151,7 @@
                   结束时间
                 </div>
               </template>
-              {{ picData.info.end_time }}
+              {{ formatDate(picData.info.end_time) }}
             </el-descriptions-item>
             <el-descriptions-item>
               <template #label>
@@ -197,6 +197,7 @@
 
 <script lang="ts" setup>
 import { ref, Ref, computed } from "vue";
+import moment from 'moment';
 
 const showPic: Ref<boolean> = ref(false)  // 预览图片是否可见
 /**
@@ -228,7 +229,10 @@ const getBase64 = (base64: string) => {
   return ('data:image/png;base64,' + base64).replace(/[\r\n]/g, '')
 }
 
-
+// 转换格式
+function formatDate(date: Date) {
+    return moment(date).format('YYYY-MM-DD');
+}
 
 </script>
 <style scoped>

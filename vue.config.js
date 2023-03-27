@@ -31,10 +31,19 @@ module.exports = {
             },
             // 访问腾讯网站跨域
             '/getAddressTencent': { // 代理标识，项目中通过这个url向后端发送数据
+                // 将请求“/getAddressTencent”,但真实请求是“https://apis.map.qq.com/”
                 target: 'https://apis.map.qq.com/',
                 changeOrigin: true, // 是否跨域
                 pathRewrite: { 
                     '^/getAddressTencent': ""
+                }
+            },
+            // 查询数据库所有数据
+            '/selectAllData': { // 代理标识，项目中通过这个url向后端发送数据
+                target: 'http://127.0.0.1:6000/selectAllData',
+                changeOrigin: true, // 是否跨域
+                pathRewrite: { 
+                    '^/selectAllData': ""
                 }
             },
         }

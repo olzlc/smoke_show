@@ -116,6 +116,26 @@ def product_json(json_name):
     return json_str
 
 
+# 探索数据页：寻找所有数据
+@app.route('/selectAllData', methods=['POST'])
+def select_all_data():
+    exist_data = []
+    try:
+        cur.execute("select * from fire_smoke")
+        data = cur.fetchall()
+        # 名称
+        fields = [desc[0] for desc in cur.description]
+        for item in data:
+            item = dict(zip(fields, item))
+            exist_data.append(item)
+        return jsonify(
+            {'message': '成功找到数据', 'original_data': exist_data})
+    except Exception as e:
+        print(e)
+        db.session.rollback()
+        return jsonify({'message': '出现错误'})
+
+
 # 定义路由和视图函数
 @app.route('/addDatabase', methods=['POST'])
 def post_image():
@@ -234,6 +254,7 @@ def add_all_data_origin():
         db.session.commit()
 
 
+# 找到数据库已有图片和信息
 def select_all_data_origin():
     # app.app_context().push()
     # with app.app_context():

@@ -1,196 +1,145 @@
 <template>
-    <!-- <div id="map"></div>
-
-    <div class="map-overlay">
-        <fieldset>
-            <input id="feature-filter" type="text" placeholder="Filter results by name">
-        </fieldset>
-        <div id="feature-listing" class="listing"></div>
-    </div> -->
+    <el-table :data="databaseData" height="640" stripe border style="width: 100%">
+        <el-table-column prop="id" label="数据序号" sortable width="90" />
+        <el-table-column prop="beaufort" label="风速强度" sortable width="90" />
+        <el-table-column prop="fireBrigade" label="消防队伍" sortable width="90" />
+        <el-table-column prop="money" label="财产损失" sortable width="90" />
+        <el-table-column prop="victim" label="受害人数" sortable width="90" />
+        <el-table-column prop="rainfall" label="降雨量" sortable width="90" />
+        <el-table-column prop="temperature" label="温度" sortable width="90" />
+        <el-table-column prop="humidity" label="相对湿度" sortable width="90" />
+        <el-table-column prop="windDirection" label="风向" sortable width="90" />
+        <el-table-column prop="fireType" label="火灾类型" sortable width="90" />
+        <el-table-column prop="fireIntensity" label="火势强度" sortable width="90" />
+        <el-table-column prop="start_time" label="开始时间" sortable width="120">
+            <template #default="scope">
+                {{ formatDate(scope.row.start_time) }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="end_time" label="结束时间" sortable width="120">
+            <template #default="scope">
+                {{ formatDate(scope.row.end_time) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="地址信息">
+            <el-table-column prop="lat" label="纬度" width="180" />
+            <el-table-column prop="lng" label="经度" width="180" />
+            <el-table-column prop="province" label="省" width="180" />
+            <el-table-column prop="city" label="市" width="180" />
+            <el-table-column prop="area" label="区" width="180" />
+            <el-table-column prop="address" label="详细位置" width="180" />
+        </el-table-column>
+    </el-table>
 </template>
 
 <script lang="ts" setup>
+import mapData from "@/composables/result-page/exampleData";
+import { ElMessage } from "element-plus";
+import { Ref, ref } from "vue";
+import axios from "axios";
+import { selectInfo } from "@/composables/baseTypes";
+import {
+    openErrorMessage,
+    openSuccessMessage,
+    openWarningMessage,
+} from "@/composables/utilsFunction";
+import moment from 'moment';
 
-// import mapboxgl, { Map } from "mapbox-gl";
-// import MapboxLanguage from "@mapbox/mapbox-gl-language"; // 加中文
-// mapboxgl.accessToken = 'YOUR_MAPBOX_ACCESS_TOKEN';
-// const map = new mapboxgl.Map({
-//     container: 'map',
-//     // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
-//     style: 'mapbox://styles/mapbox/streets-v12',
-//     center: [-98, 38.88],
-//     maxZoom: 5,
-//     minZoom: 1,
-//     zoom: 3
-// });
+let databaseData: Ref<selectInfo[]> = ref([] as selectInfo[])
+// 由于RESTful API是一次性发送请求的，因此似乎难以实现定期从服务器回传数据的功能。
+const controller = new AbortController();
+ElMessage.info("正在查询数据库，请耐心等候。");
+const waitTimeOut = setTimeout(() => {
+    openWarningMessage("预测算法运算时间比预想中要长，请耐心等候。");
+}, 12000);
+const stopQueryTimeOut = setTimeout(() => {
+    openErrorMessage(
+        "等待结果返回超时，将停止等待。请检查后端服务器是否连通和正常运行。"
+    );
+    controller.abort(); // 停止axios等待
+}, 45000);
 
-// // Holds visible airport features for filtering
-// let airports = [];
+axios
+    .post("/selectAllData", {
+        signal: controller.signal,
+    }) // 发送请求，等待返回结果
+    .then((response) => {
+        // 提取response中的数据
+        return response.data;
+    })
+    .then((data) => {
+        if (data.message === "成功找到数据") {
+            openSuccessMessage("添加完成，成功返回数据。");
+            databaseData.value = data.original_data
+        } else {
+            openWarningMessage("添加错误，加载初始数据");
+            databaseData = mapData;
+        }
+        showTableData(databaseData)
+        clear(waitTimeOut, stopQueryTimeOut)
+    })
+    .catch(
+        // 捕获错误，显示错误
+        (error: Error) => {
+            showTableData(mapData);
+            clear(
+                waitTimeOut,
+                stopQueryTimeOut,
+                error.message
+            );
+        }
+    );
 
-// // Create a popup, but don't add it to the map yet.
-// const popup = new mapboxgl.Popup({
-//     closeButton: false
-// });
+/**
+ * 统一清除timeout
+ * @param waitTimeOut
+ * @param stopQueryTimeOut
+ * @param isSubmittingQueryForm
+ * @param errorMessage
+ */
+function clear(
+    waitTimeOut: number,
+    stopQueryTimeOut: number,
+    errorMessage: string = ""
+) {
+    clearTimeout(waitTimeOut);
+    clearTimeout(stopQueryTimeOut);
 
-// const filterEl = document.getElementById('feature-filter');
-// const listingEl = document.getElementById('feature-listing');
+    if (errorMessage != "") {
+        openErrorMessage(errorMessage, "long");
+    }
+}
 
-// function renderListings(features: any) {
-//     const empty = document.createElement('p');
-//     // Clear any existing listings
-//     if (listingEl && filterEl && filterEl.parentNode) {
-//         listingEl.innerHTML = '';
-//         if (features.length) {
-//             for (const feature of features) {
-//                 const itemLink = document.createElement('a');
-//                 const label = `${feature.properties.name} (${feature.properties.abbrev})`;
-//                 itemLink.href = feature.properties.wikipedia;
-//                 itemLink.target = '_blank';
-//                 itemLink.textContent = label;
-//                 itemLink.addEventListener('mouseover', () => {
-//                     // Highlight corresponding feature on the map
-//                     popup
-//                         .setLngLat(feature.geometry.coordinates)
-//                         .setText(label)
-//                         .addTo(map);
-//                 });
-//                 listingEl.appendChild(itemLink);
-//             }
-
-//             // Show the filter input
-//             (filterEl.parentNode as any).style.display = 'block';
-//         } else if (features.length === 0 && (filterEl as any).value !== '') {
-//             empty.textContent = 'No results found';
-//             listingEl.appendChild(empty);
-//         } else {
-//             empty.textContent = 'Drag the map to populate results';
-//             listingEl.appendChild(empty);
-
-//             // Hide the filter input
-//             filterEl.parentNode.style.display = 'none';
-
-//             // remove features filter
-//             map.setFilter('airport', ['has', 'abbrev']);
-//         }
-//     }
-
-// }
-
-// function normalize(string) {
-//     return string.trim().toLowerCase();
-// }
-
-// // Because features come from tiled vector data,
-// // feature geometries may be split
-// // or duplicated across tile boundaries.
-// // As a result, features may appear
-// // multiple times in query results.
-// function getUniqueFeatures(features, comparatorProperty) {
-//     const uniqueIds = new Set();
-//     const uniqueFeatures = [];
-//     for (const feature of features) {
-//         const id = feature.properties[comparatorProperty];
-//         if (!uniqueIds.has(id)) {
-//             uniqueIds.add(id);
-//             uniqueFeatures.push(feature);
-//         }
-//     }
-//     return uniqueFeatures;
-// }
-
-// map.on('load', () => {
-//     map.addSource('airports', {
-//         'type': 'vector',
-//         'url': 'mapbox://mapbox.04w69w5j'
-//     });
-//     map.addLayer({
-//         'id': 'airport',
-//         'source': 'airports',
-//         'source-layer': 'ne_10m_airports',
-//         'type': 'circle',
-//         'paint': {
-//             'circle-color': '#4264fb',
-//             'circle-radius': 4,
-//             'circle-stroke-width': 2,
-//             'circle-stroke-color': '#ffffff'
-//         }
-//     });
-
-//     map.on('movestart', () => {
-//         // reset features filter as the map starts moving
-//         map.setFilter('airport', ['has', 'abbrev']);
-//     });
-
-//     map.on('moveend', () => {
-//         const features = map.queryRenderedFeatures({ layers: ['airport'] });
-
-//         if (features) {
-//             const uniqueFeatures = getUniqueFeatures(features, 'iata_code');
-//             // Populate features for the listing overlay.
-//             renderListings(uniqueFeatures);
-
-//             // Clear the input container
-//             filterEl.value = '';
-
-//             // Store the current features in sn `airports` variable to
-//             // later use for filtering on `keyup`.
-//             airports = uniqueFeatures;
-//         }
-//     });
-
-//     map.on('mousemove', 'airport', (e) => {
-//         // Change the cursor style as a UI indicator.
-//         map.getCanvas().style.cursor = 'pointer';
-
-//         // Populate the popup and set its coordinates based on the feature.
-//         const feature = e.features[0];
-//         popup
-//             .setLngLat(feature.geometry.coordinates)
-//             .setText(
-//                 `${feature.properties.name} (${feature.properties.abbrev})`
-//             )
-//             .addTo(map);
-//     });
-
-//     map.on('mouseleave', 'airport', () => {
-//         map.getCanvas().style.cursor = '';
-//         popup.remove();
-//     });
-
-//     filterEl.addEventListener('keyup', (e) => {
-//         const value = normalize(e.target.value);
-
-//         // Filter visible features that match the input value.
-//         const filtered = [];
-//         for (const feature of airports) {
-//             const name = normalize(feature.properties.name);
-//             const code = normalize(feature.properties.abbrev);
-//             if (name.includes(value) || code.includes(value)) {
-//                 filtered.push(feature);
-//             }
-//         }
-
-//         // Populate the sidebar with filtered results
-//         renderListings(filtered);
-
-//         // Set the filter to populate features into the layer.
-//         if (filtered.length) {
-//             map.setFilter('airport', [
-//                 'match',
-//                 ['get', 'abbrev'],
-//                 filtered.map((feature) => {
-//                     return feature.properties.abbrev;
-//                 }),
-//                 true,
-//                 false
-//             ]);
-//         }
-//     });
-
-//     // Call this function on initialization
-//     // passing an empty array to render an empty state
-//     renderListings([]);
-// });
+// 转换格式
+function formatDate(date: Date) {
+    return moment(date).format('YYYY-MM-DD');
+}
+// 展示数据
+function showTableData(data: Ref<selectInfo[]>) {
+    console.log(data.value)
+}
 </script>
-
 <style scoped></style>
+<style>
+/* 横向滚动条 */
+::-webkit-scrollbar {
+    /*滚动条整体样式*/
+    width: 7px;
+    /*高宽分别对应横竖滚动条的尺寸*/
+    height: 7px;
+}
+
+::-webkit-scrollbar-thumb {
+    /*滚动条里面小方块*/
+    border-radius: 10px;
+    box-shadow: inset 0 0 5px rgba(97, 184, 179, 0.1);
+    background: #909399;
+}
+
+::-webkit-scrollbar-track {
+    /*滚动条里面轨道*/
+    box-shadow: inset 0 0 5px rgba(87, 175, 187, 0.1);
+    border-radius: 10px;
+    background: #ededed;
+}
+</style>

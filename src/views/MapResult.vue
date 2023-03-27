@@ -3,43 +3,46 @@
     <!-- 地图 -->
     <div class="chart" id="mapContainer" ref="mapDivElement" />
     <!-- 左边搜索部分 -->
-    <el-button v-if="isSetMapStyleIng" :loading="true" style="width: 440px;position: absolute;top: 15px;left: 25px;">加载中</el-button>
+    <el-button v-if="isSetMapStyleIng" :loading="true"
+      style="width: 440px;position: absolute;top: 15px;left: 25px;">加载中</el-button>
     <div v-else class="search">
       <div class="search_div">
-        <el-select v-model="filterName" filterable placeholder="需要筛选的属性" style="width: 150px;">
-          <!-- <el-option v-for="item in filterAttribute" :key="item.value" :label="item.label" :value="item.value" /> -->
+        <el-select v-model="filterName" v-if='!isFlitering' filterable placeholder="需要筛选的属性" style="width: 150px;">
           <el-option-group v-for="group in filterAttribute" :key="group.label" :label="group.label">
             <el-option v-for="item in group.options" :key="item.value" :label="item.label" :value="item.value" />
           </el-option-group>
         </el-select>
       </div>
-      <div class="search_div" v-if="isWhatType === 0">
+      <div class="search_div" v-if="isWhatType === 0 && !isFlitering">
         <el-select v-model="filterSign" filterable placeholder="判断类型" style="width: 100px;">
           <el-option v-for="item in signOption" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
       </div>
-      <div class="search_div" v-if="isWhatType === 0">
+      <div class="search_div" v-if="isWhatType === 0 && !isFlitering">
         <el-input-number v-model="filterNum" :min="0" style="width: 110px" />
       </div>
-      <div class="search_div" v-else-if="isWhatType === 1">
+      <div class="search_div" v-else-if="isWhatType === 1 && !isFlitering">
         <el-input v-model="filterString" placeholder="请输入字符串" style="width: 200px" />
       </div>
-      <div class="search_div" v-else-if="isWhatType === 2">
+      <div class="search_div" v-else-if="isWhatType === 2 && !isFlitering">
         <el-select v-model="singleChoice" filterable placeholder="选项" style="width: 120px;">
           <el-option v-for="item in fireTypeOption" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
       </div>
-      <div class="search_div" v-else-if="isWhatType === 3">
+      <div class="search_div" v-else-if="isWhatType === 3 && !isFlitering">
         <el-select v-model="singleChoice" filterable placeholder="选项" style="width: 100px;">
           <el-option v-for="item in fireIntensityOption" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
       </div>
-      <div class="search_div" v-else-if="isWhatType === 4">
+      <div class="search_div" v-else-if="isWhatType === 4 && !isFlitering">
         <el-select v-model="singleChoice" filterable placeholder="选项" style="width: 100px;">
           <el-option v-for="item in windDirectionOption" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
       </div>
-      <div class="search_div">
+      <div class="search_div" v-if="isFlitering">
+        <el-tag class="mx-1" style="width: 160px;" size="large">{{ combiningFliterStrings }}</el-tag>
+      </div>
+      <div class="search_div" v-if="isWhatType !== -1">
         <el-button type="primary" v-if='!isFlitering' @click="filterHandler" plain>筛选</el-button>
         <el-button type="danger" v-else @click="deletefilterHandler" plain>取消筛选</el-button>
       </div>
@@ -105,7 +108,8 @@ import { changeTrafficMapVisibility } from "@/composables/result-page/traffic-la
 import { Road, Ruler, Message } from "@icon-park/vue-next";
 import mapData from "@/composables/result-page/exampleData";
 import { FeatureCollection, Feature, Geometry, GeoJsonProperties } from "geojson";
-import setupFilter from "@/composables/result-page/initFilter";
+import { setupFilter } from "@/composables/result-page/initFilter";
+import { addFliter, initFliterAttribute, combineString } from "@/composables/result-page/controlFliter";
 
 
 let mapObj: Ref<FeatureCollection> = ref({ type: "FeatureCollection", features: [] } as FeatureCollection<Geometry, GeoJsonProperties>)
@@ -139,7 +143,7 @@ if (history.state.params !== undefined && history.state.params.resultdata.messag
   all_feature.value.push(feature.value)
   // 原来已有图片
   for (let queryResult of resultdata.original_data) {
-    feature.value = { type: "Feature", geometry: { "type": "Point", "coordinates": [queryResult.lng, queryResult.lat] }, properties: { ...queryResult, image_data: queryResult.image_data} }
+    feature.value = { type: "Feature", geometry: { "type": "Point", "coordinates": [queryResult.lng, queryResult.lat] }, properties: { ...queryResult, image_data: queryResult.image_data } }
     all_feature.value.push(feature.value)
   }
   mapObj = ref({ type: "FeatureCollection", features: all_feature.value } as FeatureCollection<Geometry, GeoJsonProperties>)
@@ -147,7 +151,7 @@ if (history.state.params !== undefined && history.state.params.resultdata.messag
 
   let all_feature: Ref<Feature[]> = ref([])
   for (let queryResult of mapData.value) {
-    let feature: Ref<Feature> = ref({ type: "Feature", geometry: { "type": "Point", "coordinates": [queryResult.lng, queryResult.lat] }, properties:  { ...queryResult, image_data: queryResult.name } } as Feature)
+    let feature: Ref<Feature> = ref({ type: "Feature", geometry: { "type": "Point", "coordinates": [queryResult.lng, queryResult.lat] }, properties: { ...queryResult, image_data: queryResult.name } } as Feature)
     all_feature.value.push(feature.value)
   }
   mapObj = ref({ type: "FeatureCollection", features: all_feature.value } as FeatureCollection<Geometry, GeoJsonProperties>)
@@ -212,7 +216,7 @@ const setMapStyleHandler = (event: Event) => {
     fliterMapObj,
     arr
   );
-  
+
   removeElButtonFocus(event);
 };
 
@@ -241,25 +245,17 @@ const showInfoButtonHandler = (event: Event) => {
 // console.log(map.value.getCanvas);
 // .getContext('2d', {willReadFrequently: true});
 
-// 筛选属性 
-const filterName = ref('')
-
-// 筛选符号 
-const filterSign = ref('')
-
 // 属性选项, 符号选项, 火灾类型选项, 火势强度选项, 风向选项
 const { filterAttribute, signOption, fireTypeOption, fireIntensityOption, windDirectionOption } = setupFilter();
-// 筛选数字
-const filterNum = ref(0)
 
-// 输入字符串
-const filterString = ref('');
+const { filterName,
+  filterSign,
+  filterNum,
+  filterString,
+  singleChoice } = initFliterAttribute();
 
-// 火灾类型选项, 火势强度选项, 风向选项选择
-const singleChoice = ref('')
-
-// 0表示数字类型，1表示字符串类型，2表示火灾类型, 3表示火势强度, 4表示风向选项
-const isWhatType = ref(0)
+// -1表示初始化状态，0表示数字类型，1表示字符串类型，2表示火灾类型, 3表示火势强度, 4表示风向选项
+const isWhatType: Ref<number> = ref(-1)
 
 // 判断当前类型
 const objectType = () => {
@@ -273,10 +269,11 @@ const objectType = () => {
         else {
           if (filterName.value === 'fireType')
             return 2;
-          if (filterName.value === 'fireIntensity')
+          else if (filterName.value === 'fireIntensity')
             return 3;
-          else
+          else if (filterName.value === 'windDirection')
             return 4;
+          
         }
       }
     }
@@ -294,112 +291,11 @@ watch(
   { deep: true }
 );
 
-// 字符串去空格转小写
-function normalize(string: string) {
-  return string.trim().toLowerCase();
-}
+const combiningFliterStrings:Ref<string> = ref('')
 
 const filterHandler = (event: Event) => {
-  // 检查是否出错
-  if(filterName.value === ''){
-    openErrorMessage('请填写筛选类型')
-    return
-  }
-  if(isWhatType.value === 0){
-    if(filterSign.value === ''){
-      openErrorMessage('请填写符号判断')
-      return
-    }
-    if(filterNum.value === null || filterNum.value === undefined){
-      openErrorMessage('请填写判断数字')
-      return
-    }
-  }
-  else if(isWhatType.value === 1){
-    if(filterString.value === ''){
-      openErrorMessage('请填写筛选字符串')
-      return
-    }
-  }
-  else{
-    if(singleChoice.value === ''){
-      openErrorMessage('请填写筛选选项')
-      return
-    }
-  }
-  isFlitering.value = true
-  enum Operator {
-    GreaterThan = '>',
-    LessThan = '<',
-    Equal = '==',
-    GreaterThanOrEqual = '>=',
-    LessThanOrEqual = '<='
-  }
-  let fliter_feature: Ref<Feature[]> = ref([])
-
-  if (isWhatType.value === 0) {
-    for (const feature of mapObj.value.features) {
-      let prop = feature.properties
-      if (prop) {
-        if (filterSign.value === Operator.GreaterThan) {
-          if (prop[filterName.value] > filterNum.value) {
-            fliter_feature.value.push(feature)
-          }
-        } else if (filterSign.value === Operator.LessThan) {
-          if (prop[filterName.value] < filterNum.value) {
-            fliter_feature.value.push(feature)
-          }
-        } else if (filterSign.value === Operator.Equal) {
-          if (prop[filterName.value] === filterNum.value) {
-            fliter_feature.value.push(feature)
-          }
-        } else if (filterSign.value === Operator.GreaterThanOrEqual) {
-          if (prop[filterName.value] >= filterNum.value) {
-            fliter_feature.value.push(feature)
-          }
-        } else if (filterSign.value === Operator.LessThanOrEqual) {
-          if (prop[filterName.value] <= filterNum.value) {
-            fliter_feature.value.push(feature)
-          }
-        } else {
-          openErrorMessage("出现筛选错误！")
-        }
-      }
-    }
-  }
-  else if (isWhatType.value === 1) {
-    for (const feature of mapObj.value.features) {
-      let prop = feature.properties
-      if (prop && normalize(prop[filterName.value]).includes(normalize(filterString.value))) {
-        fliter_feature.value.push(feature)
-      }
-    }
-  }
-  else {
-    for (const feature of mapObj.value.features) {
-      let prop = feature.properties
-      if (prop && prop[filterName.value] === singleChoice.value) {
-        fliter_feature.value.push(feature)
-      }
-    }
-  }
-  // 输出最后筛选结果
-  // for (const feature of fliter_feature.value) {
-  //   const info = feature.properties?.info
-  //   console.log(info[filterName.value])
-  // }
-  fliterMapObj.value = { type: "FeatureCollection", features: fliter_feature.value } as FeatureCollection<Geometry, GeoJsonProperties>
-  addPointInfo(map, isShowInfo, mapObj, isFlitering, fliterMapObj);
-  console.log(fliter_feature.value)
-  
-  // 图层筛选
-  if (isWhatType.value === 0) {
-    map.value.setFilter('measure-points', [filterSign.value, ['get', filterName.value], filterNum.value]);
-  } else if (isWhatType.value === 1) {
-    map.value.setFilter('measure-points', ['in', filterString.value, ['get', filterName.value]]);
-  } else {
-    map.value.setFilter('measure-points', ['==', ['get', filterName.value], singleChoice.value])
-  }
+  addFliter(filterName, isWhatType, filterSign, filterNum, filterString, singleChoice, isFlitering, mapObj, fliterMapObj, map, isShowInfo);
+  combineString(filterName, isWhatType, filterSign, filterNum, filterString, singleChoice, isFlitering, combiningFliterStrings);
   removeElButtonFocus(event);
 }
 
@@ -454,6 +350,11 @@ const deletefilterHandler = (event: Event) => {
   padding-left: 5px;
   padding-right: 5px;
 }
+
+/* el-tag内字体变大 */
+.el-tag {
+    --el-tag-font-size: 14px;
+}
 </style>
 <style>
 /* 禁止滚动条 */
@@ -466,7 +367,8 @@ body {
 .distance-container {
   position: absolute;
   top: 10px;
-  left: 10px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 1;
 }
 
@@ -480,6 +382,7 @@ body {
   padding: 5px 10px;
   border-radius: 3px;
   font-family: sans-serif;
+  max-width: 200px;
 }
 
 /* 
