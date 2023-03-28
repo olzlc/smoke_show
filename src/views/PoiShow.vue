@@ -1,29 +1,41 @@
 <template>
     <el-table :data="databaseData" height="640" stripe border style="width: 100%">
-        <el-table-column prop="id" label="数据序号" sortable width="90" />
-        <el-table-column prop="beaufort" label="风速强度" sortable width="90" />
-        <el-table-column prop="fireBrigade" label="消防队伍" sortable width="90" />
-        <el-table-column prop="money" label="财产损失" sortable width="90" />
-        <el-table-column prop="victim" label="受害人数" sortable width="90" />
-        <el-table-column prop="rainfall" label="降雨量" sortable width="90" />
-        <el-table-column prop="temperature" label="温度" sortable width="90" />
-        <el-table-column prop="humidity" label="相对湿度" sortable width="90" />
-        <el-table-column prop="windDirection" label="风向" sortable width="90" />
-        <el-table-column prop="fireType" label="火灾类型" sortable width="90" />
-        <el-table-column prop="fireIntensity" label="火势强度" sortable width="90" />
-        <el-table-column prop="start_time" label="开始时间" sortable width="120">
+        <el-table-column prop="id" v-if='inDatabase' label="数据序号" sortable width="120" />
+        <el-table-column prop="beaufort" label="风速强度" sortable width="120" />
+        <el-table-column prop="fireBrigade" label="消防队伍" sortable width="120" />
+        <el-table-column prop="money" label="财产损失" sortable width="120" />
+        <el-table-column prop="victim" label="受害人数" sortable width="120" />
+        <el-table-column prop="rainfall" label="降雨量" sortable width="120" />
+        <el-table-column prop="temperature" label="温度" sortable width="120" />
+        <el-table-column prop="humidity" label="相对湿度" sortable width="120" />
+        <el-table-column prop="fireType" label="火灾类型" sortable width="120" >
+            <template #default="scope">
+                {{ optionLabel(scope.row.fireType, 1) }}
+            </template>
+        </el-table-column>
+        <el-table-column prop="fireIntensity" label="火势强度" sortable width="120">
+            <template #default="scope">
+                {{ optionLabel(scope.row.fireIntensity, 2) }}
+            </template>
+        </el-table-column>
+        <el-table-column prop="windDirection" label="风向" sortable width="120" >
+            <template #default="scope">
+                {{ optionLabel(scope.row.windDirection, 3) }}
+            </template>
+        </el-table-column>
+        <el-table-column prop="start_time" label="开始时间" width="120">
             <template #default="scope">
                 {{ formatDate(scope.row.start_time) }}
-          </template>
+            </template>
         </el-table-column>
-        <el-table-column prop="end_time" label="结束时间" sortable width="120">
+        <el-table-column prop="end_time" label="结束时间" width="120">
             <template #default="scope">
                 {{ formatDate(scope.row.end_time) }}
-          </template>
+            </template>
         </el-table-column>
         <el-table-column label="地址信息">
-            <el-table-column prop="lat" label="纬度" width="180" />
-            <el-table-column prop="lng" label="经度" width="180" />
+            <el-table-column prop="lat" label="纬度" width="120" />
+            <el-table-column prop="lng" label="经度" width="120" />
             <el-table-column prop="province" label="省" width="180" />
             <el-table-column prop="city" label="市" width="180" />
             <el-table-column prop="area" label="区" width="180" />
@@ -44,8 +56,11 @@ import {
     openWarningMessage,
 } from "@/composables/utilsFunction";
 import moment from 'moment';
+import { setupFilter } from "@/composables/result-page/initFilter";
 
 let databaseData: Ref<selectInfo[]> = ref([] as selectInfo[])
+databaseData = mapData;
+const inDatabase:Ref<boolean> = ref(false)
 // 由于RESTful API是一次性发送请求的，因此似乎难以实现定期从服务器回传数据的功能。
 const controller = new AbortController();
 ElMessage.info("正在查询数据库，请耐心等候。");
@@ -71,9 +86,9 @@ axios
         if (data.message === "成功找到数据") {
             openSuccessMessage("添加完成，成功返回数据。");
             databaseData.value = data.original_data
+            inDatabase.value = true
         } else {
             openWarningMessage("添加错误，加载初始数据");
-            databaseData = mapData;
         }
         showTableData(databaseData)
         clear(waitTimeOut, stopQueryTimeOut)
@@ -81,7 +96,6 @@ axios
     .catch(
         // 捕获错误，显示错误
         (error: Error) => {
-            showTableData(mapData);
             clear(
                 waitTimeOut,
                 stopQueryTimeOut,
@@ -117,6 +131,21 @@ function formatDate(date: Date) {
 // 展示数据
 function showTableData(data: Ref<selectInfo[]>) {
     console.log(data.value)
+}
+// 转换
+function optionLabel(value: string, type: number) {
+    const { filterAttribute, signOption, fireTypeOption, fireIntensityOption, windDirectionOption } = setupFilter();
+    let options: Array<{ value: string, label: string }>;
+    if (type === 1)
+        options = fireTypeOption
+    else if (type === 2)
+        options = fireIntensityOption
+    else if (type === 3)
+        options = windDirectionOption
+    else
+        options = []
+    const option = options.find((option: any) => option.value === value);
+    return option ? option.label : "";
 }
 </script>
 <style scoped></style>

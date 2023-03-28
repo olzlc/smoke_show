@@ -320,6 +320,7 @@ const deletefilterHandler = (event: Event) => {
 
 .map-box {
   position: relative;
+  padding: 5px;
 }
 
 .option {
