@@ -2,12 +2,7 @@ from flask import Flask, request, render_template, redirect, flash, url_for, jso
 from flask_sqlalchemy import SQLAlchemy
 import psycopg2
 import ast
-from sqlalchemy import Table
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String, Float, Text, ForeignKey
-from sqlalchemy import and_
-import numpy as np
+import datetime
 import os
 import json
 import sys
@@ -27,6 +22,8 @@ cur = con.cursor()
 db = SQLAlchemy(app)
 from pathlib import Path
 from detect import detect_one_picture
+from detectvideo import detect_video
+import random
 
 # 获取当前模块的绝对路径，__file__是一个特殊变量，它表示当前模块的文件名
 FILE = Path(__file__).resolve()  # 这个文件绝对路径
@@ -151,8 +148,6 @@ def post_image():
     # db.drop_all()
     # db.create_all()
     try:
-        # db.drop_all()
-        # db.create_all()
         # 将图片保存在服务器
         keep_path = ROOT / 'original_pic'
         if not os.path.isdir(keep_path):
@@ -215,6 +210,86 @@ def post_image():
         return jsonify(
             {'message': '成功加入数据', 'detect_box': json_str, 'detect_image': image_data, 'image_info': image_info, 'original_data': original_data})
         # return jsonify(post_data)
+    except Exception as e:
+        print(e)
+        db.session.rollback()
+        return jsonify({'message': '出现错误'})
+
+
+# 定义路由和视图函数
+@app.route('/addAutoVideo', methods=['POST'])
+def post_auto_video():
+    file = request.files.get('file')  # 获取上传的文件
+    if not file:
+        return jsonify({'message': '数据库成功被后端接受，但是表单或者图片出错，并未加入数据库'})
+    LOGGER.info(f"success load data")
+    try:
+        # 将图片保存在服务器
+        suffix = file.filename.split('.')[-1]
+        keep_path = ROOT / 'original_pic'
+        if not os.path.isdir(keep_path):
+            os.makedirs(keep_path)
+        # todo:如果表一开始为空，查询不到id会报错
+        cur.execute('SELECT MAX(id) FROM fire_smoke')
+        con.commit()
+        info = cur.fetchall()
+        if len(info) != 0 and len(info[0]) != 0 and info[0][0] is not None:
+            max_id = info[0][0] + 1
+        else:
+            max_id = 1
+
+        now_id = str(max_id).rjust(6, '0')
+        video_name = now_id + '.' + suffix
+        pic_name = now_id + '.jpg'
+        path = os.path.join(keep_path, video_name)
+        file.save(path)
+        detect_video(video_name)
+
+        # 找到数据库已有数据
+        original_data = select_all_data_origin()
+
+        # 将数据存储到数据库
+        time = datetime.datetime.now().strftime('%Y-%m-%d')
+        # 生成不一样经纬度防止叠加点
+        lat = round(random.uniform(22.5366001, 22.5367008), 7)
+        lng = round(random.uniform(113.9343001, 113.9344000), 7)
+        fire_smoke = FireSmoke(lat=lat, lng=lng,
+                               start_time=time, end_time=time, fireType='indoor',
+                               fireIntensity='small',
+                               victim=0, province='广东省',
+                               city='深圳市', area='南山区',
+                               beaufort=3, windDirection='northwest',
+                               rainfall=0,
+                               temperature=26, humidity=60,
+                               fireBrigade=0,
+                               money=0, picOriginalName=file.filename, picDatasetName=pic_name,
+                               address='深圳大学')
+        db.session.add(fire_smoke)
+        db.session.commit()
+
+        # txt生成Json
+        json_name = str(max_id).rjust(6, '0') + '.txt'
+        json_str = product_json(json_name)
+        # 预测图片转码base64
+        with open(ROOT / 'detect_pic' / pic_name, 'rb') as f:
+            image_data = base64.b64encode(f.read()).decode()
+        # 图片信息变为json
+        image_info = {'lat': lat, 'lng': lng, 'picOriginalName': file.filename,
+                      'start_time': time, 'end_time': time,
+                      'fireType': 'indoor', 'fireIntensity': 'small',
+                      'victim': 0, 'province': '广东省',
+                      'city': '深圳市', 'area': '南山区',
+                      'beaufort': 3, 'windDirection': 'northwest',
+                      'rainfall': 0, 'temperature': 26,
+                      'humidity': 60, 'fireBrigade': 0,
+                      'money': 0, 'picDatasetName': pic_name,
+                      'address': '深圳大学'
+                      }
+
+        # 返回 JSON 数据
+        return jsonify(
+            {'message': '成功加入数据', 'detect_box': json_str, 'detect_image': image_data, 'image_info': image_info,
+             'original_data': original_data})
     except Exception as e:
         print(e)
         db.session.rollback()

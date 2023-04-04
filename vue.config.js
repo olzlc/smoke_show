@@ -46,6 +46,13 @@ module.exports = {
                     '^/selectAllData': ""
                 }
             },
+            '/addAutoVideo': {
+                target: 'http://127.0.0.1:6000/addAutoVideo',
+                changeOrigin: true, // 是否跨域
+                pathRewrite: { 
+                    '^/addAutoVideo': ""
+                }
+            },
         }
     },
 

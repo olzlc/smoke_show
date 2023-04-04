@@ -3,13 +3,16 @@
     <div id="nav">
       <el-menu mode="horizontal" :default-active="$route.path">
         <el-menu-item index="1">
-          <router-link to="/">开始搜索</router-link>
+          <router-link to="/">用户报警</router-link>
         </el-menu-item>
         <el-menu-item index="2">
-          <router-link to="/Mapbox">地图展示</router-link>
+          <router-link to="/Mapbox">火警展示</router-link>
         </el-menu-item>
         <el-menu-item index="3">
           <router-link to="/Poishow">探索数据</router-link>
+        </el-menu-item>
+        <el-menu-item index="4">
+          <router-link to="/Analogdetect">模拟检测</router-link>
         </el-menu-item>
       </el-menu>
     </div>

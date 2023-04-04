@@ -22,6 +22,12 @@ const routes: Array<RouteRecordRaw> = [
         component: () =>
             import("../views/PoiShow.vue")
     },
+    {
+        path: "/Analogdetect",
+        name: "Analogdetect",
+        component: () =>
+            import("../views/Analogdetect.vue")
+    },
 ]
 
 

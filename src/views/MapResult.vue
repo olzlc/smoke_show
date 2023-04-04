@@ -96,7 +96,7 @@
   </div>
 </template>
 <script lang="ts" setup>
-import { Ref, ref, watch, toRefs } from "vue";
+import { Ref, ref, watch, getCurrentInstance, ComponentInternalInstance, toRefs } from "vue";
 import { useRoute } from 'vue-router'
 import { MapType, DetectResponse, DetectBox, selectInfo } from "@/composables/baseTypes";
 import { setMapStyleMapbox } from "@/composables/result-page/changeMapStyle";
@@ -107,10 +107,11 @@ import { openErrorMessage, removeElButtonFocus } from "@/composables/utilsFuncti
 import { changeTrafficMapVisibility } from "@/composables/result-page/traffic-layers";
 import { Road, Ruler, Message } from "@icon-park/vue-next";
 import mapData from "@/composables/result-page/exampleData";
+import { ElNotification } from 'element-plus'
 import { FeatureCollection, Feature, Geometry, GeoJsonProperties } from "geojson";
 import { setupFilter } from "@/composables/result-page/initFilter";
 import { addFliter, initFliterAttribute, combineString } from "@/composables/result-page/controlFliter";
-
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;  // 类型断言,使用getcurrentinstance代替使用this
 
 let mapObj: Ref<FeatureCollection> = ref({ type: "FeatureCollection", features: [] } as FeatureCollection<Geometry, GeoJsonProperties>)
 // 动态路由实现：https://blog.csdn.net/hsuehgw/article/details/129250004
@@ -273,7 +274,7 @@ const objectType = () => {
             return 3;
           else if (filterName.value === 'windDirection')
             return 4;
-          
+
         }
       }
     }
@@ -291,7 +292,25 @@ watch(
   { deep: true }
 );
 
-const combiningFliterStrings:Ref<string> = ref('')
+// 弹框
+let firstTime = 0
+watch(() => isSetMapStyleIng,
+  () => {
+    if (isSetMapStyleIng.value === false && firstTime == 0) {
+      firstTime += 1;
+      ElNotification({
+        title: 'Warning',
+        message: '有一条新火警待处理',
+        type: 'warning',
+        offset: 150,
+        duration: 0,
+      })
+    }
+
+  },
+  { deep: true })
+
+const combiningFliterStrings: Ref<string> = ref('')
 
 const filterHandler = (event: Event) => {
   addFliter(filterName, isWhatType, filterSign, filterNum, filterString, singleChoice, isFlitering, mapObj, fliterMapObj, map, isShowInfo);
@@ -354,7 +373,7 @@ const deletefilterHandler = (event: Event) => {
 
 /* el-tag内字体变大 */
 .el-tag {
-    --el-tag-font-size: 14px;
+  --el-tag-font-size: 14px;
 }
 </style>
 <style>
