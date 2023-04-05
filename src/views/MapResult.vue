@@ -303,7 +303,6 @@ watch(() => isSetMapStyleIng,
         message: '有一条新火警待处理',
         type: 'warning',
         offset: 150,
-        duration: 0,
       })
     }
 

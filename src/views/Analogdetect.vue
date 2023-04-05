@@ -35,12 +35,6 @@ import { openErrorMessage, openWarningMessage, } from "@/composables/utilsFuncti
 import { genFileId } from 'element-plus'
 import { router } from "@/router";
 import type { UploadFile, UploadProps, UploadInstance, UploadRawFile, UploadProgressEvent, UploadFiles } from 'element-plus'
-import postForm from "@/composables/submit/submitForm";
-
-const dialogUrl: Ref<string> = ref('')
-const dialogFile: Ref<UploadFile> = ref({} as UploadFile);
-const { proxy } = getCurrentInstance() as ComponentInternalInstance;  // 类型断言,使用getcurrentinstance代替使用this
-// ctx和proxy都可以访问到定义的全局方法，但是ctx只能在本地使用，线上环境使用proxy
 
 // 骨架屏
 const isSubmittingQueryForm: Ref<boolean> = ref(false);
@@ -82,13 +76,20 @@ const handleExceed: UploadProps['onExceed'] = (files) => {
 }
 
 const handleSuccess: UploadProps['onSuccess'] = (response: any, uploadFile: UploadFile, uploadFiles: UploadFiles) => {
-    const controller = new AbortController();
     const params = { resultdata: response };
-    router.push({
-          // 跳转到结果页
-          name: "Mapbox",
-          state: { params },
+    if (response.message === "成功检测，但是并无目标") {
+        openSuccessMessage("成功检测，但是并无目标");
+        uploadFiles.splice(-1, 1);//移除错误文件
+        isSubmittingQueryForm.value = false;
+    }
+    else {
+        router.push({
+            // 跳转到结果页
+            name: "Mapbox",
+            state: { params },
         })
+
+    }
 }
 
 // 骨架屏自适应高度

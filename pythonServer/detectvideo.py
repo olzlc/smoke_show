@@ -237,6 +237,12 @@ def run(
             s_i = strs
         LOGGER.info(f"{s}{'' if len(det) else '(no detections), '}{dt[1].dt * 1E3:.1f}ms")
 
+    if max_sum_conf == 0:
+        t = tuple(x.t / seen * 1E3 for x in dt)  # speeds per image
+        LOGGER.info(f'Speed: %.1fms pre-process, %.1fms inference, %.1fms NMS per image at shape {(1, 3, *imgsz)}' % t)
+        LOGGER.info(f'No detection')
+        return False
+    # 保存图片
     dataset = LoadImages(source, img_size=imgsz, stride=stride, auto=pt, vid_stride=vid_stride)
     for path, im, im0s, vid_cap, s in dataset:
         if s_i != s:
@@ -327,6 +333,7 @@ def run(
         LOGGER.info(f"Results saved to {colorstr('bold', save_pic_dir)}")
     if update:
         strip_optimizer(weights[0])  # update model (to fix SourceChangeWarning)
+    return True
 
 
 def parse_opt(name=''):
@@ -408,11 +415,12 @@ def main(option):
     check_requirements(exclude=('tensorboard', 'thop'))
     # **vars(option)会将option这个命名空间对象中的所有变量和值以关键字参数的形式展开
     # 换句话说，如果option包含变量a=1和b=2，那么**vars(option)就相当于传递关键字参数a=1, b=2给run函数
-    run(**vars(option))
+    return run(**vars(option))
+
 
 def detect_video(name):
     option = parse_opt(name)
-    main(option)
+    return main(option)
 
 
 if __name__ == "__main__":

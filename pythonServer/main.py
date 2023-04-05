@@ -243,7 +243,10 @@ def post_auto_video():
         pic_name = now_id + '.jpg'
         path = os.path.join(keep_path, video_name)
         file.save(path)
-        detect_video(video_name)
+        isInDataset = detect_video(video_name)
+
+        if not isInDataset:
+            return jsonify({'message': '成功检测，但是并无目标'})
 
         # 找到数据库已有数据
         original_data = select_all_data_origin()
@@ -251,8 +254,8 @@ def post_auto_video():
         # 将数据存储到数据库
         time = datetime.datetime.now().strftime('%Y-%m-%d')
         # 生成不一样经纬度防止叠加点
-        lat = round(random.uniform(22.5366001, 22.5367008), 7)
-        lng = round(random.uniform(113.9343001, 113.9344000), 7)
+        lat = round(random.uniform(22.5282200, 22.5423360), 7)
+        lng = round(random.uniform(113.9276235, 113.9366311), 7)
         fire_smoke = FireSmoke(lat=lat, lng=lng,
                                start_time=time, end_time=time, fireType='indoor',
                                fireIntensity='small',
@@ -268,7 +271,7 @@ def post_auto_video():
         db.session.commit()
 
         # txt生成Json
-        json_name = str(max_id).rjust(6, '0') + '.txt'
+        json_name = now_id + '.txt'
         json_str = product_json(json_name)
         # 预测图片转码base64
         with open(ROOT / 'detect_pic' / pic_name, 'rb') as f:
