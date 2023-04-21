@@ -211,7 +211,7 @@ const picData = defineProps<{
 
 const handleClick = () => {
   showPic.value = true;
-  console.log(picData.info)
+  // console.log(picData.info)
 }
 
 const isBase64 = (str: string) => {

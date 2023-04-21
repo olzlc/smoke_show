@@ -196,7 +196,7 @@ const setMapStyleHandler = (event: Event) => {
   isFlitering.value = false;
   filterName.value = '';
   filterSign.value = '';
-  isWhatType.value = 0;
+  isWhatType.value = -1;
   singleChoice.value = '';
   filterString.value = '';
   filterNum.value = 0;

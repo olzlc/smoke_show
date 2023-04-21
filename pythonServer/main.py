@@ -152,13 +152,16 @@ def post_image():
         keep_path = ROOT / 'original_pic'
         if not os.path.isdir(keep_path):
             os.makedirs(keep_path)
-        # todo:如果表一开始为空，查询不到id会报错
-        cur.execute('SELECT MAX(id) FROM fire_smoke')
-        con.commit()
-        info = cur.fetchall()
-        if len(info) != 0 and len(info[0]) != 0 and info[0][0] is not None:
-            max_id = info[0][0] + 1
-        else:
+        try:
+            cur.execute('SELECT MAX(id) FROM fire_smoke')
+            con.commit()
+            info = cur.fetchall()
+            if len(info) != 0 and len(info[0]) != 0 and info[0][0] is not None:
+                max_id = info[0][0] + 1
+            else:
+                max_id = 1
+        except Exception as e:
+            print(e)
             max_id = 1
 
         pic_name = str(max_id).rjust(6, '0') + '.jpg'
@@ -172,7 +175,7 @@ def post_image():
         original_data = select_all_data_origin()
 
         # 将数据存储到数据库
-        fire_smoke = FireSmoke(lat=post_data['lat'], lng=post_data['lng'],
+        fire_smoke = FireSmoke(id=max_id, lat=post_data['lat'], lng=post_data['lng'],
                                start_time=post_data['period'][0],
                                end_time=post_data['period'][1], fireType=post_data['fireType'],
                                fireIntensity=post_data['fireIntensity'],
@@ -229,13 +232,16 @@ def post_auto_video():
         keep_path = ROOT / 'original_pic'
         if not os.path.isdir(keep_path):
             os.makedirs(keep_path)
-        # todo:如果表一开始为空，查询不到id会报错
-        cur.execute('SELECT MAX(id) FROM fire_smoke')
-        con.commit()
-        info = cur.fetchall()
-        if len(info) != 0 and len(info[0]) != 0 and info[0][0] is not None:
-            max_id = info[0][0] + 1
-        else:
+        try:
+            cur.execute('SELECT MAX(id) FROM fire_smoke')
+            con.commit()
+            info = cur.fetchall()
+            if len(info) != 0 and len(info[0]) != 0 and info[0][0] is not None:
+                max_id = info[0][0] + 1
+            else:
+                max_id = 1
+        except Exception as e:
+            print(e)
             max_id = 1
 
         now_id = str(max_id).rjust(6, '0')
@@ -256,7 +262,7 @@ def post_auto_video():
         # 生成不一样经纬度防止叠加点
         lat = round(random.uniform(22.5282200, 22.5423360), 7)
         lng = round(random.uniform(113.9276235, 113.9366311), 7)
-        fire_smoke = FireSmoke(lat=lat, lng=lng,
+        fire_smoke = FireSmoke(id=max_id, lat=lat, lng=lng,
                                start_time=time, end_time=time, fireType='indoor',
                                fireIntensity='small',
                                victim=0, province='广东省',

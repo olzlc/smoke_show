@@ -398,7 +398,7 @@ function addInfoToList(
   selectAllData: Ref<SearchInfo[]>,
   selectFinalData: Ref<SearchInfo>
 ) {
-  if (addressList.data === null || addressList.data === undefined || addressList.data !== "") return;
+  if (addressList.data === null || addressList.data === undefined || addressList.data === "") return;
   selectAllData.value.splice(0, selectAllData.value.length);
   const final: Ref<boolean> = ref(false);
   if (selectFinalData.value != null && selectFinalData.value !== undefined) {
